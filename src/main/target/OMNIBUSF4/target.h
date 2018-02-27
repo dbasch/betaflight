@@ -32,6 +32,8 @@
 #define OMNIBUSF4BASE // For config.c
 #endif
 
+#define USE_NAV
+
 #if defined(LUXF4OSD)
 #define USBD_PRODUCT_STRING "LuxF4osd"
 #elif defined(DYSF4PRO)
