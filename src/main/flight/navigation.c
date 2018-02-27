@@ -228,11 +228,10 @@ void navNewGpsData(void)
 {
     if (FLIGHT_MODE(GPS_HOLD_MODE) || FLIGHT_MODE(GPS_HOME_MODE)) {
         // we are navigating
-
         // gps nav calculations, these are common for nav and poshold
         GPS_distance_cm_bearing(&gpsSol.llh.lat, &gpsSol.llh.lon, &GPS_WP[LAT], &GPS_WP[LON], &wp_distance, &target_bearing);
         GPS_calc_location_error(&GPS_WP[LAT], &GPS_WP[LON], &gpsSol.llh.lat, &gpsSol.llh.lon);
-
+	
         uint16_t speed;
         switch (nav_mode) {
         case NAV_MODE_POSHOLD:
@@ -241,6 +240,7 @@ void navNewGpsData(void)
             break;
 
         case NAV_MODE_WP:
+	    DEBUG_SET(DEBUG_RTH,0,magHold);
             speed = GPS_calc_desired_speed(navigationConfig()->nav_speed_max, NAV_SLOW_NAV);    // slow navigation
             // use error as the desired rate towards the target
             // Desired output is in nav_lat and nav_lon where 1deg inclination is 100
