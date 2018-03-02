@@ -828,11 +828,13 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
         gyroReadTemperature();
     }
 
-#ifdef USE_MAG
-    if (sensors(SENSOR_MAG)) {
-        updateMagHold();
+    //XXX TODO: horrible hack to test if this works DIEGO
+    //#ifdef USE_MAG
+    if (sensors(SENSOR_MAG) || sensors(SENSOR_GPS)) {
+	DEBUG_SET(DEBUG_RTH, 2, magHold);
+	updateMagHold();
     }
-#endif
+    //#endif
 
 #if defined(USE_ALT_HOLD)
     // updateRcCommands sets rcCommand, which is needed by updateAltHoldState and updateSonarAltHoldState
