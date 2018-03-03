@@ -159,7 +159,6 @@ void initActiveBoxIds(void)
     // macro to enable boxId (BoxidMaskEnable). Reference to ena is hidden, local use only
 #define BME(boxId) do { bitArraySet(&ena, boxId); } while (0)
     BME(BOXARM);
-    BME(BOXGPSRESCUE);
     BME(BOXPREARM);
     if (!feature(FEATURE_AIRMODE)) {
         BME(BOXAIRMODE);
@@ -192,6 +191,7 @@ void initActiveBoxIds(void)
     if (feature(FEATURE_GPS)) {
         BME(BOXGPSHOME);
         BME(BOXGPSHOLD);
+	BME(BOXGPSRESCUE);
         BME(BOXBEEPGPSCOUNT);
     }
 #endif
