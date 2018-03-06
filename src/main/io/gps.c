@@ -1174,9 +1174,6 @@ void GPS_reset_home_position(void)
         GPS_home[LAT] = gpsSol.llh.lat;
         GPS_home[LON] = gpsSol.llh.lon;
         GPS_calc_longitude_scaling(gpsSol.llh.lat); // need an initial value for distance and bearing calc
-#ifdef USE_NAV
-        nav_takeoff_bearing = DECIDEGREES_TO_DEGREES(attitude.values.yaw);              // save takeoff heading
-#endif
         // Set ground altitude
         ENABLE_STATE(GPS_FIX_HOME);
     }
@@ -1291,9 +1288,6 @@ void onGpsNewData(void)
     // calculate the current velocity based on gps coordinates continously to get a valid speed at the moment when we start navigating
     GPS_calc_velocity();
 
-#ifdef USE_NAV
-    navNewGpsData();
-#endif
 }
 
 #endif
