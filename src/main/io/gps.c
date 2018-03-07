@@ -1288,6 +1288,7 @@ void onGpsNewData(void)
     // calculate the current velocity based on gps coordinates continously to get a valid speed at the moment when we start navigating
     GPS_calc_velocity();
 
+    rescueNewGpsData();
 }
 
 #endif
