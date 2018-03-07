@@ -15,6 +15,7 @@
  * along with Betaflight. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "io/gps.h"
+#include "fc/runtime_config.h"
 
 gpsLocation_t home;
 uint16_t      distanceToHome;        // distance to home point in meters                                                                                               
@@ -24,7 +25,11 @@ int16_t       directionToHome;
  If we have new GPS data, update home heading
  if possible and applicable.
 */
-
-
 void rescueNewGpsData(void) {
+    if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
+	//mess with the controls here
+    }
+    else {
+	//update state and move on
+    }
 }
