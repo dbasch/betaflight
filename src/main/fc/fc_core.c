@@ -81,7 +81,6 @@
 #include "flight/failsafe.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
-#include "flight/navigation.h"
 #include "flight/pid.h"
 #include "flight/servos.h"
 
@@ -737,12 +736,6 @@ bool processRx(timeUs_t currentTimeUs)
     }
 #endif
 
-#ifdef USE_NAV
-    if (sensors(SENSOR_GPS)) {
-        updateGpsWaypointsAndMode();
-    }
-#endif
-
     if (IS_RC_MODE_ACTIVE(BOXPASSTHRU)) {
         ENABLE_FLIGHT_MODE(PASSTHRU_MODE);
     } else {
@@ -871,14 +864,6 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
     }
 
     processRcCommand();
-
-#ifdef USE_NAV
-    if (sensors(SENSOR_GPS)) {
-        if ((FLIGHT_MODE(GPS_HOME_MODE) || FLIGHT_MODE(GPS_HOLD_MODE)) && STATE(GPS_FIX_HOME)) {
-            updateGpsStateForHomeAndHoldMode();
-        }
-    }
-#endif
 
 #ifdef USE_SDCARD
     afatfs_poll();
