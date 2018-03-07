@@ -283,12 +283,10 @@ void processRcStickPositions()
 
     if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
 
+
         //hackety hack DIEGO to test that the mode works
         DEBUG_SET(DEBUG_RTH, 1, 14);
-        rollAndPitchTrims_t accelerometerTrimsDelta;
-        accelerometerTrimsDelta.values.pitch = 2;
-        applyAndSaveAccelerometerTrimsDelta(&accelerometerTrimsDelta);
-        repeatAfter(STICK_AUTOREPEAT_MS);
+
         return;
     }
 
