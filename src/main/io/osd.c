@@ -513,6 +513,11 @@ static bool osdDrawSingleElement(uint8_t item)
             } else if (FLIGHT_MODE(HORIZON_MODE)) {
                 p = "HOR ";
             }
+            //this is a hack, XXX diego
+            if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
+                p = "RESC";
+            }
+
 
             displayWrite(osdDisplayPort, elemPosX, elemPosY, p);
             return true;
