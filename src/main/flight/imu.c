@@ -38,6 +38,7 @@
 #include "flight/imu.h"
 #include "flight/mixer.h"
 #include "flight/pid.h"
+#include "flight/gps_rescue.h"
 
 #include "io/gps.h"
 
@@ -434,7 +435,16 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
             rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - gpsSol.groundCourse);
             useYaw = true;
         } else {
-            // If GPS rescue mode is active and we can use it, go for it
+            // If GPS rescue mode is active and we can use it, go for it.  When we're close to home we will 
+            // probably stop re calculating GPS heading data
+            
+            if(canUseGPSHeading) {
+                rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - gpsSol.groundCourse);
+            } else {
+                rawYawError = 0;
+            }
+            
+            useYaw = true;
         }
     }
 #endif

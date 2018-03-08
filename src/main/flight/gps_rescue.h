@@ -15,10 +15,13 @@
  * along with Betaflight. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "io/gps.h"
+
  gpsLocation_t home;
  uint16_t      distanceToHome;        // distance to home point in meters
  int16_t       directionToHome;
 
+ extern bool canUseGPSHeading;
 
  enum {
      NAV_RTH_NO_ALT          = 0,            // Maintain current altitude
