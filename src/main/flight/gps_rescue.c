@@ -19,7 +19,8 @@
 
 gpsLocation_t home;
 uint16_t      distanceToHome;        // distance to home point in meters                                                                                               
-int16_t       directionToHome;   
+int16_t       directionToHome;
+int8_t        canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 
 /*
  If we have new GPS data, update home heading
