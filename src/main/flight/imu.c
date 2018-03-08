@@ -428,8 +428,11 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
     }
 #endif
 #if defined(USE_GPS)
-    else if (STATE(FIXED_WING) && sensors(SENSOR_GPS) && STATE(GPS_FIX) && gpsSol.numSat >= 5 && gpsSol.groundSpeed >= 300) {
-        // In case of a fixed-wing aircraft we can use GPS course over ground to correct heading
+    //use a multicopter course over ground heading, if it's moving twice as fast
+    //as we'd require a wing to move
+    else if ((STATE(FIXED_WING && gpsSol.groundSpeed >= 300) || gpsSol.groundSpeed > 600)
+	     && sensors(SENSOR_GPS) && STATE(GPS_FIX) && gpsSol.numSat >= 5 ) {
+	
         rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - gpsSol.groundCourse);
         useYaw = true;
     }
