@@ -437,9 +437,10 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
         } else {
             // If GPS rescue mode is active and we can use it, go for it.  When we're close to home we will 
             // probably stop re calculating GPS heading data
-            
+
             if(canUseGPSHeading) {
-                rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - gpsSol.groundCourse);
+                int16_t groundCourse = RADIANS_TO_DECIDEGREES(atan2_approx(attitude.values.roll, attitude.values.pitch));
+                rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - (gpsSol.groundCourse + groundCourse));
             } else {
                 rawYawError = 0;
             }
