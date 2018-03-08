@@ -16,10 +16,8 @@
  */
 #include "io/gps.h"
 #include "fc/runtime_config.h"
-
-gpsLocation_t home;
-uint16_t      distanceToHome;        // distance to home point in meters                                                                                               
-int16_t       directionToHome;   
+#include "flight/altitude.h"
+#include "flight/gps_rescue.h"
 
 /*
  If we have new GPS data, update home heading
@@ -27,9 +25,14 @@ int16_t       directionToHome;
 */
 void rescueNewGpsData(void) {
     if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
-	//mess with the controls here
+        //really we don't want alt hold, but we have to start somewhere
+        applyAltHold();
     }
     else {
 	//update state and move on
     }
+}
+
+void setDesiredAltitude(void) {
+
 }
