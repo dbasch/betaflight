@@ -844,9 +844,7 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
 #endif
 
 #ifdef USE_GPS
-    if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
-        updateGPSRescueState();
-    }
+    updateGPSRescueState();
 #endif
 
 #if defined(USE_ALT_HOLD)
