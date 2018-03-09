@@ -14,6 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with Betaflight. If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "common/axis.h"
+
 #include "io/gps.h"
 
 #include "fc/runtime_config.h"
@@ -48,4 +51,9 @@ void rescueNewGpsData(void)
 void updateGPSRescueState(void) 
 {
     //TODO:  Make this work
+    
+    // Just as a test, lets make it pitch forward until our speed is 5m/s
+    if(gpsSol.groundSpeed <= 5000) {
+        //gpsRescueAngle[AI_PITCH] += 10; // This might be really bad as it will run a bunch of times before 
+    }
 }
