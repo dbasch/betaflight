@@ -44,6 +44,7 @@
 
 #include "flight/pid.h"
 #include "flight/imu.h"
+#include "flight/gps_rescue.h"
 #include "flight/mixer.h"
 
 #include "io/gps.h"
@@ -384,7 +385,7 @@ static float pidLevel(int axis, const pidProfile_t *pidProfile, const rollAndPit
     // rcDeflection is in range [-1.0, 1.0]
     float angle = pidProfile->levelAngleLimit * getRcDeflection(axis);
 #ifdef USE_GPS
-    angle += GPS_angle[axis];
+    angle += gpsRescueAngle[axis];
 #endif
     angle = constrainf(angle, -pidProfile->levelAngleLimit, pidProfile->levelAngleLimit);
     const float errorAngle = angle - ((attitude.raw[axis] - angleTrim->raw[axis]) / 10.0f);

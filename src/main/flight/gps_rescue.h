@@ -14,21 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with Betaflight. If not, see <http://www.gnu.org/licenses/>.
  */
-
+#include "common/axis.h"
 #include "io/gps.h"
 
- gpsLocation_t home;
- uint16_t      distanceToHome;        // distance to home point in meters
- int16_t       directionToHome;
+gpsLocation_t home;
+uint16_t      distanceToHome;        // distance to home point in meters
+int16_t       directionToHome;
 
- extern bool canUseGPSHeading;
+extern bool canUseGPSHeading;
+extern int16_t gpsRescueAngle[ANGLE_INDEX_COUNT];
 
- enum {
-     NAV_RTH_NO_ALT          = 0,            // Maintain current altitude
-     NAV_RTH_EXTRA_ALT       = 1,            // Maintain current altitude + predefined safety margin
-     NAV_RTH_CONST_ALT       = 2,            // Climb/descend to predefined altitude
-     NAV_RTH_MAX_ALT         = 3,            // Track maximum altitude and climb to it when RTH
-     NAV_RTH_AT_LEAST_ALT    = 4,            // Climb to predefined altitude if below it
+enum {
+    NAV_RTH_NO_ALT          = 0,            // Maintain current altitude
+    NAV_RTH_EXTRA_ALT       = 1,            // Maintain current altitude + predefined safety margin
+    NAV_RTH_CONST_ALT       = 2,            // Climb/descend to predefined altitude
+    NAV_RTH_MAX_ALT         = 3,            // Track maximum altitude and climb to it when RTH
+    NAV_RTH_AT_LEAST_ALT    = 4,            // Climb to predefined altitude if below it
  };
 
  uint16_t final_altitude;
