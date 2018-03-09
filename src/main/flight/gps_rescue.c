@@ -15,14 +15,23 @@
  * along with Betaflight. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <math.h>
+
 #include "common/axis.h"
+#include "common/maths.h"
 
 #include "io/gps.h"
 
 #include "fc/runtime_config.h"
+#include "fc/config.h"
+#include "fc/rc_controls.h"
 
 #include "flight/altitude.h"
 #include "flight/gps_rescue.h"
+#include "flight/imu.h"
+
+#include "rx/rx.h"
 
 gpsLocation_t home;
 uint16_t      distanceToHome;        // distance to home point in meters                                                                                               
@@ -46,6 +55,7 @@ void rescueNewGpsData(void)
     Use the data we have available to set gpsRescueAngles and update internal state
 */
 void updateGPSRescueState(void) 
+
 {
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         // Reset the rescue angles to zero!
@@ -63,4 +73,17 @@ void updateGPSRescueState(void)
     if(gpsSol.groundSpeed <= 5000) {
         gpsRescueAngle[AI_PITCH] = 250; // This might be really bad as it will run a bunch of times before 
     }
+}
+
+// Very similar to maghold function on betaflight/cleanflight
+void setBearing(int16_t deg)
+{
+    int16_t dif = DECIDEGREES_TO_DEGREES(attitude.values.yaw) - deg;
+    if (dif <= -180)
+        dif += 360;
+    if (dif >= +180)
+        dif -= 360;
+    dif *= -GET_DIRECTION(rcControlsConfig()->yaw_control_reversed);
+    if (STATE(SMALL_ANGLE))
+        rcCommand[YAW] -= dif * currentPidProfile->pid[PID_MAG].P / 30;    // 18 deg
 }
