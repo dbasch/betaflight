@@ -24,9 +24,6 @@
 #include "flight/altitude.h"
 #include "flight/gps_rescue.h"
 
-gpsLocation_t home;
-uint16_t      distanceToHome;        // distance to home point in meters                                                                                               
-int16_t       directionToHome;
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
 
@@ -39,7 +36,9 @@ int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this
 */
 void rescueNewGpsData(void)
 {
-    // Update state
+   if (!ARMING_FLAG(ARMED))
+    GPS_reset_home_position();
+
 }
 
 /*
