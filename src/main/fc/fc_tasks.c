@@ -146,11 +146,11 @@ static void taskUpdateRxMain(timeUs_t currentTimeUs)
     updateArmingStatus();
 
 #ifdef USE_ALT_HOLD
-#ifdef USE_BARO
-    if (sensors(SENSOR_BARO)) {
+
+    if (sensors(SENSOR_BARO) || sensors(SENSOR_GPS)) {
         updateAltHoldState();
     }
-#endif
+
 
 #ifdef USE_RANGEFINDER
     if (sensors(SENSOR_RANGEFINDER)) {
@@ -175,20 +175,12 @@ static void taskUpdateBaro(timeUs_t currentTimeUs)
 }
 #endif
 
-#if defined(USE_BARO) || defined(USE_RANGEFINDER)
+#if defined(USE_GPS) || defined(USE_BARO) || defined(USE_RANGEFINDER)
 static void taskCalculateAltitude(timeUs_t currentTimeUs)
 {
-    if (false
-#if defined(USE_BARO)
-        || (sensors(SENSOR_BARO) && isBaroReady())
+    calculateEstimatedAltitude(currentTimeUs);
+}
 #endif
-#if defined(USE_RANGEFINDER)
-        || sensors(SENSOR_RANGEFINDER)
-#endif
-        ) {
-        calculateEstimatedAltitude(currentTimeUs);
-    }}
-#endif // USE_BARO || USE_RANGEFINDER
 
 #ifdef USE_TELEMETRY
 static void taskTelemetry(timeUs_t currentTimeUs)
@@ -482,7 +474,7 @@ cfTask_t cfTasks[TASK_COUNT] = {
     },
 #endif
 
-#if defined(USE_BARO) || defined(USE_RANGEFINDER)
+#if defined(USE_GPS) || defined(USE_BARO) || defined(USE_RANGEFINDER)
     [TASK_ALTITUDE] = {
         .taskName = "ALTITUDE",
         .taskFunc = taskCalculateAltitude,

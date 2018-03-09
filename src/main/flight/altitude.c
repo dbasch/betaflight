@@ -28,6 +28,7 @@
 #include "common/axis.h"
 #include "common/maths.h"
 #include "common/utils.h"
+#include "common/filter.h"
 
 #include "pg/pg.h"
 #include "pg/pg_ids.h"
@@ -52,13 +53,12 @@ int32_t AltHold;
 static int32_t estimatedVario = 0;                      // variometer in cm/s
 static int32_t estimatedAltitude = 0;                // in cm
 
-
-
 enum {
     DEBUG_ALTITUDE_ACC,
     DEBUG_ALTITUDE_VEL,
     DEBUG_ALTITUDE_HEIGHT
 };
+
 // 40hz update rate (20hz LPF on acc)
 #define BARO_UPDATE_FREQUENCY_40HZ (1000 * 25)
 
@@ -206,6 +206,86 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
 }
 #endif // USE_ALT_HOLD
 
+/*
+    Attempt to use a KF for smoothing barometer out
+    void fastKalmanInit(fastKalman_t *filter, float q, float r, float p);
+    float fastKalmanUpdate(fastKalman_t *filter, float input);
+*/
+
+void calculateEstimatedAltitude(timeUs_t currentTimeUs)
+{
+    // No point in running this if we cannot derive accurate data
+    if (!sensors(SENSOR_BARO) || !sensors(SENSOR_ACC)) {
+        return;
+    }
+
+    static timeUs_t previousTimeUs = 0;
+    static fastKalman_t fkf; // For filtering barometer noise
+    static bool fkfInit = false; // Prevent double initialization
+
+    const uint32_t dTime = currentTimeUs - previousTimeUs;
+
+    if (dTime < BARO_UPDATE_FREQUENCY_40HZ) {
+        return;
+    }
+
+    previousTimeUs = currentTimeUs;
+
+    int32_t baroAlt = 0;
+    int32_t baroVel = 0;
+
+    if (!fkfInit) {
+        fastKalmanInit(&fkf, 0.1, 3.0, 0.2);
+        fkfInit = true;
+    }
+    
+
+    if (!isBaroCalibrationComplete()) {
+        performBaroCalibrationCycle();
+    } else {
+        baroAlt = baroCalculateAltitude();
+        estimatedAltitude = fastKalmanUpdate(&fkf, baroAlt);
+    }
+
+
+    // Calculate throttle adjustment
+    if (sensors(SENSOR_BARO)) {
+        if (!isBaroCalibrationComplete()) {
+            return;
+        }
+
+        static int32_t lastBaroAlt = 0;
+        baroVel = (baroAlt - lastBaroAlt) * 1000000.0f / dTime;
+        lastBaroAlt = baroAlt;
+
+        baroVel = constrain(baroVel, -1500, 1500);  // constrain baro velocity +/- 1500cm/s
+        baroVel = applyDeadband(baroVel, 10);       // to reduce noise near zero
+    }
+
+    static float vel = 0.0f;
+
+    vel = vel * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel) + baroVel * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel));
+
+    int32_t vel_tmp = lrintf(vel);
+    float accZ_tmp = 0;
+
+    if (accSumCount) {
+        accZ_tmp = (float)accSum[2] / accSumCount;
+    }
+
+    estimatedVario = applyDeadband(vel_tmp, 5);
+
+#ifdef USE_ALT_HOLD
+    static float accZ_old = 0.0f;
+    altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
+    accZ_old = accZ_tmp;
+#else
+    UNUSED(accZ_tmp);
+#endif
+}
+
+
+/*
 #if defined(USE_BARO) || defined(USE_RANGEFINDER)
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 {
@@ -302,7 +382,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     UNUSED(accZ_tmp);
 #endif
 }
-#endif // USE_BARO || USE_RANGEFINDER
+#endif // USE_BARO || USE_RANGEFINDER*/
 
 int32_t getEstimatedAltitude(void)
 {
