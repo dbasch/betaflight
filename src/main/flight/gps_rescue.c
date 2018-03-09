@@ -62,6 +62,6 @@ void updateGPSRescueState(void)
     
     // Just as a test, lets make it pitch forward until our speed is 5m/s
     if(gpsSol.groundSpeed <= 5000) {
-        gpsRescueAngle[AI_PITCH] += 10; // This might be really bad as it will run a bunch of times before 
+        gpsRescueAngle[AI_PITCH] = 250; // This might be really bad as it will run a bunch of times before 
     }
 }
