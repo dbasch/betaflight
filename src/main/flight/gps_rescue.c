@@ -43,9 +43,9 @@ void rescueNewGpsData(void)
 }
 
 /*
-    Use the data we have available to set gpsRescueAngles
+    Use the data we have available to set gpsRescueAngles and update internal state
 */
-void calculateRescueAngles(void) 
+void updateGPSRescueState(void) 
 {
     //TODO:  Make this work
 }

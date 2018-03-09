@@ -845,7 +845,7 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
 
 #ifdef USE_GPS
     if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
-        calculateRescueAngles();
+        updateGPSRescueState();
     }
 #endif
 
