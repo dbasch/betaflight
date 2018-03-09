@@ -83,6 +83,7 @@
 #include "flight/mixer.h"
 #include "flight/pid.h"
 #include "flight/servos.h"
+#include "flight/gps_rescue.h"
 
 
 // June 2013     V2.2-dev
@@ -839,6 +840,12 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
 #ifdef USE_MAG
     if (sensors(SENSOR_MAG)) {
         updateMagHold();
+    }
+#endif
+
+#ifdef USE_GPS
+    if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
+        calculateRescueAngles();
     }
 #endif
 

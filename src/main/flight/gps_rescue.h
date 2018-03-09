@@ -33,3 +33,5 @@ enum {
  };
 
  uint16_t final_altitude;
+
+void calculateRescueAngles(void);
