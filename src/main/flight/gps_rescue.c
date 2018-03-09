@@ -30,19 +30,16 @@ int16_t       directionToHome;
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
 
+// TEMPORARY SETTINGS UNTIL WE BOTHER ADDING REAL ONES
+
+
 /*
  If we have new GPS data, update home heading
  if possible and applicable.
 */
 void rescueNewGpsData(void)
 {
-    if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
-        //really we don't want alt hold, but we have to start somewhere
-        applyAltHold();
-    }
-    else {
-	//update state and move on
-    }
+    // Update state
 }
 
 /*
@@ -57,6 +54,8 @@ void updateGPSRescueState(void)
 
         return;
     }
+
+    applyAltHold();
 
     //TODO:  Make this work
     
