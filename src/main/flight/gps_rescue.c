@@ -30,6 +30,7 @@
 #include "flight/altitude.h"
 #include "flight/gps_rescue.h"
 #include "flight/imu.h"
+#include "flight/pid.h"
 
 #include "rx/rx.h"
 
