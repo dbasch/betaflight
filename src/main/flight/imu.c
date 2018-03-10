@@ -36,6 +36,7 @@
 #include "drivers/time.h"
 
 #include "fc/runtime_config.h"
+#include "fc/rc_controls.h"
 
 #include "flight/imu.h"
 #include "flight/mixer.h"
@@ -438,7 +439,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
 
         if (!fkfInit) {
             // Low Q should make it lag (which is good!)
-            fastKalmanInit(&fkf, 3.0, 0.2, 0);
+            fastKalmanInit(&fkf, 3.0, 0.2, 0.2);
             fkfInit = true;
         }
 
@@ -451,6 +452,10 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
             // probably stop re calculating GPS heading data
 
             if(canUseGPSHeading) {
+                // Change our error tolerance inversely proportional to the throttle.
+                // The higher the throttle value, the more likely the craft is flying towards the angle it is tilted
+                fkf->r = (3 - constrain(rcCommand[THROTTLE], 0.1, 3)) * 0.001f;
+
                 int16_t groundCourse = RADIANS_TO_DECIDEGREES(atan2_approx(attitude.values.roll, attitude.values.pitch)) + gpsSol.groundCourse;
 
                 lastKnownHeading = DECIDEGREES_TO_DEGREES(groundCourse); // So we can retrieve this from within the OSD/etc
