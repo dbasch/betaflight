@@ -454,7 +454,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
             if(canUseGPSHeading) {
                 // Change our error tolerance inversely proportional to the throttle.
                 // The higher the throttle value, the more likely the craft is flying towards the angle it is tilted
-                fkf->r = (3 - constrain(rcCommand[THROTTLE], 0.1, 3)) * 0.001f;
+                fkf.r = (3 - constrain(rcCommand[THROTTLE], 0.1, 3)) * 0.001f;
 
                 int16_t groundCourse = RADIANS_TO_DECIDEGREES(atan2_approx(attitude.values.roll, attitude.values.pitch)) + gpsSol.groundCourse;
 
