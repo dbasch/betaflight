@@ -235,7 +235,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     int32_t baroVel = 0;
 
     if (!fkfInit) {
-        fastKalmanInit(&fkf, 0.1, 3.0, 0.2);
+        fastKalmanInit(&fkf, 3.0, 0.2, 0);
         fkfInit = true;
     }
     

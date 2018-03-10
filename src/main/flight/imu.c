@@ -28,6 +28,7 @@
 
 #include "common/axis.h"
 #include "common/maths.h"
+#include "common/filter.h"
 
 #include "pg/pg.h"
 #include "pg/pg_ids.h"
@@ -431,6 +432,15 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
 #endif
 #if defined(USE_GPS)
     else if (sensors(SENSOR_GPS) && STATE(GPS_FIX) && gpsSol.numSat >= 5 && gpsSol.groundSpeed >= 300) {
+        static fastKalman_t fkf; // For filtering ground course noise
+        static bool fkfInit = false; // Prevent double initialization
+
+        if (!fkfInit) {
+            // Low Q should make it lag (which is good!)
+            fastKalmanInit(&fkf, 3.0, 0.2, 0);
+            fkfInit = true;
+        }
+
         // In case of a fixed-wing aircraft we can use GPS course over ground to correct heading
         if(STATE(FIXED_WING)) {
             rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - gpsSol.groundCourse);
@@ -441,7 +451,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
 
             if(canUseGPSHeading) {
                 int16_t groundCourse = RADIANS_TO_DECIDEGREES(atan2_approx(attitude.values.roll, attitude.values.pitch)) + gpsSol.groundCourse;
-                rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - groundCourse);
+                rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - fastKalmanUpdate(&fkf, groundCourse););
             } else {
                 rawYawError = 0;
             }
