@@ -438,7 +438,7 @@ static bool osdDrawSingleElement(uint8_t item)
     case OSD_HOME_DIR:
         if (STATE(GPS_FIX) && STATE(GPS_FIX_HOME)) {
             if (GPS_distanceToHome > 0) {
-                const int h = GPS_directionToHome - DECIDEGREES_TO_DEGREES(attitude.values.yaw);
+                const int h = GPS_directionToHome - getHeadingDirection();
                 buff[0] = osdGetDirectionSymbolFromHeading(h);
             } else {
                 // We don't have a HOME symbol in the font, by now we use this
