@@ -439,7 +439,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
 
         if (!fkfInit) {
             // Low Q should make it lag (which is good!)
-            fastKalmanInit(&fkf, 3.0, 0.2, 0.2);
+            fastKalmanInit(&fkf, 3, 0, 0);
             fkfInit = true;
         }
 
@@ -454,7 +454,15 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
             if(canUseGPSHeading) {
                 // Change our error tolerance inversely proportional to the throttle.
                 // The higher the throttle value, the more likely the craft is flying towards the angle it is tilted
-                fkf.r = (3 - constrain(rcCommand[THROTTLE], 0.1, 3)) * 0.001f;
+                float qGain = 3;
+                float rGain = 0.1;
+                float pGain = 0.2;
+
+                float uncertainty = (1 - constrainf(rcCommand[THROTTLE], 0, 1)) * 0.001f;
+
+                fkf.q = uncertainty * qGain;
+                fkf.r = uncertainty * rGain;
+                fkf.p = uncertainty * pGain;
 
                 int16_t groundCourse = RADIANS_TO_DECIDEGREES(atan2_approx(attitude.values.roll, attitude.values.pitch)) + gpsSol.groundCourse;
 
