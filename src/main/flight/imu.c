@@ -87,6 +87,7 @@ float accVelScale;
 static float throttleAngleScale;
 static float fc_acc;
 static float smallAngleCosZ = 0;
+static int16_t lastKnownHeading = 0;
 
 static imuRuntimeConfig_t imuRuntimeConfig;
 
@@ -451,6 +452,9 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
 
             if(canUseGPSHeading) {
                 int16_t groundCourse = RADIANS_TO_DECIDEGREES(atan2_approx(attitude.values.roll, attitude.values.pitch)) + gpsSol.groundCourse;
+
+                lastKnownHeading = groundCourse; // So we can retrieve this from within the OSD/etc
+
                 rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - fastKalmanUpdate(&fkf, groundCourse));
             } else {
                 rawYawError = 0;
@@ -632,4 +636,9 @@ void imuQuaternionHeadfreeTransformVectorEarthToBody(t_fp_vector_def *v)
     v->X = x;
     v->Y = y;
     v->Z = z;
+}
+
+int16_t getHeadingDirection()
+{
+    return lastKnownHeading;
 }
