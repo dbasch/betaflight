@@ -451,7 +451,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
 
             if(canUseGPSHeading) {
                 int16_t groundCourse = RADIANS_TO_DECIDEGREES(atan2_approx(attitude.values.roll, attitude.values.pitch)) + gpsSol.groundCourse;
-                rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - fastKalmanUpdate(&fkf, groundCourse););
+                rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - fastKalmanUpdate(&fkf, groundCourse));
             } else {
                 rawYawError = 0;
             }
