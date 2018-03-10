@@ -244,6 +244,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
         performBaroCalibrationCycle();
     } else {
         baroAlt = baroCalculateAltitude();
+        DEBUG_SET(DEBUG_RTH, 3, baroAlt);
         estimatedAltitude = fastKalmanUpdate(&fkf, baroAlt);
     }
 
