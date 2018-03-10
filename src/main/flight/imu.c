@@ -454,9 +454,9 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
             if(canUseGPSHeading) {
                 // Change our error tolerance inversely proportional to the throttle.
                 // The higher the throttle value, the more likely the craft is flying towards the angle it is tilted
-                float qGain = 3;
-                float rGain = 0.1;
-                float pGain = 0.2;
+                float qGain = 6;
+                float rGain = 0.3;
+                float pGain = 1;
 
                 float uncertainty = (1 - constrainf(rcCommand[THROTTLE], 0, 1)) * 0.001f;
 
@@ -464,11 +464,14 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                 fkf.r = uncertainty * rGain;
                 fkf.p = uncertainty * pGain;
 
-                int16_t groundCourse = RADIANS_TO_DECIDEGREES(atan2_approx(attitude.values.roll, attitude.values.pitch)) + gpsSol.groundCourse;
+                int16_t groundCourse = fastKalmanUpdate(
+                    &fkf,
+                    RADIANS_TO_DECIDEGREES(atan2_approx(attitude.values.roll, attitude.values.pitch)) + gpsSol.groundCourse
+                );
 
                 lastKnownHeading = DECIDEGREES_TO_DEGREES(groundCourse); // So we can retrieve this from within the OSD/etc
 
-                rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - fastKalmanUpdate(&fkf, groundCourse));
+                rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - groundCourse);
             } else {
                 rawYawError = 0;
             }

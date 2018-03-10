@@ -42,6 +42,8 @@
 #include "flight/imu.h"
 #include "flight/pid.h"
 
+#include "io/gps.h"
+
 #include "rx/rx.h"
 
 #include "sensors/sensors.h"
@@ -215,74 +217,86 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 {
     // No point in running this if we cannot derive accurate data
-    if (!sensors(SENSOR_BARO) || !sensors(SENSOR_ACC)) {
+    if ((!sensors(SENSOR_BARO) && !sensors(SENSOR_GPS)) || !sensors(SENSOR_ACC)) {
         return;
     }
 
     static timeUs_t previousTimeUs = 0;
     static fastKalman_t fkf; // For filtering barometer noise
     static bool fkfInit = false; // Prevent double initialization
+    static float vel = 0.0f;
 
     const uint32_t dTime = currentTimeUs - previousTimeUs;
 
-    if (dTime < BARO_UPDATE_FREQUENCY_40HZ) {
-        return;
-    }
-
-    previousTimeUs = currentTimeUs;
-
-    int32_t baroAlt = 0;
-    int32_t baroVel = 0;
-
-    if (!fkfInit) {
-        fastKalmanInit(&fkf, 20.0, 0.2, 0);
-        fkfInit = true;
-    }
-    
-
-    if (!isBaroCalibrationComplete()) {
-        performBaroCalibrationCycle();
-    } else {
-        baroAlt = baroCalculateAltitude();
-        DEBUG_SET(DEBUG_RTH, 3, baroAlt);
-        estimatedAltitude = fastKalmanUpdate(&fkf, baroAlt);
-    }
-
-
-    // Calculate throttle adjustment
-    if (sensors(SENSOR_BARO)) {
-        if (!isBaroCalibrationComplete()) {
+    if(sensors(SENSOR_BARO)) {
+        if (dTime < BARO_UPDATE_FREQUENCY_40HZ) {
             return;
         }
 
-        static int32_t lastBaroAlt = 0;
-        baroVel = (baroAlt - lastBaroAlt) * 1000000.0f / dTime;
-        lastBaroAlt = baroAlt;
+        static float accZ_old = 0.0f;
 
-        baroVel = constrain(baroVel, -1500, 1500);  // constrain baro velocity +/- 1500cm/s
-        baroVel = applyDeadband(baroVel, 10);       // to reduce noise near zero
+        int32_t baroAlt = 0;
+        int32_t baroVel = 0;
+
+        if (!fkfInit) {
+            // TODO:  Tune these values
+            fastKalmanInit(&fkf, 20.0, 0.2, 0);
+            fkfInit = true;
+        }
+
+        if (!isBaroCalibrationComplete()) {
+            performBaroCalibrationCycle();
+        } else {
+            baroAlt = baroCalculateAltitude();
+            DEBUG_SET(DEBUG_RTH, 3, baroAlt);
+            estimatedAltitude = fastKalmanUpdate(&fkf, baroAlt);
+
+            static int32_t lastBaroAlt = 0;
+
+            baroVel = (baroAlt - lastBaroAlt) * 1000000.0f / dTime;
+            lastBaroAlt = baroAlt;
+
+            baroVel = constrain(baroVel, -1500, 1500);  // constrain baro velocity +/- 1500cm/s
+            baroVel = applyDeadband(baroVel, 10);       // to reduce noise near zero
+
+            vel = vel * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel) + baroVel * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel));
+
+            int32_t vel_tmp = lrintf(vel);
+            float accZ_tmp = 0;
+
+            if (accSumCount) {
+                accZ_tmp = (float)accSum[2] / accSumCount;
+            }
+
+            estimatedVario = applyDeadband(vel_tmp, 5);
+
+            imuResetAccelerationSum();
+
+            #ifdef USE_ALT_HOLD
+                altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
+                accZ_old = accZ_tmp;
+            #else
+                UNUSED(accZ_tmp);
+            #endif
+        }
+    } else if (sensors(SENSOR_GPS)) {
+        if(!STATE(GPS_FIX)) {
+            return;
+        }
+
+        estimatedAltitude = gpsSol.llh.alt*100;
+
+        if (!fkfInit) {
+            // TODO:  Tune these values
+            fastKalmanInit(&fkf, 3, 0.2, 2);
+            fkfInit = true;
+        }
+
+        estimatedAltitude = fastKalmanUpdate(&fkf, gpsSol.llh.alt*100);
     }
 
-    static float vel = 0.0f;
 
-    vel = vel * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel) + baroVel * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel));
-
-    int32_t vel_tmp = lrintf(vel);
-    float accZ_tmp = 0;
-
-    if (accSumCount) {
-        accZ_tmp = (float)accSum[2] / accSumCount;
-    }
-
-    estimatedVario = applyDeadband(vel_tmp, 5);
-
-#ifdef USE_ALT_HOLD
-    static float accZ_old = 0.0f;
-    altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
-    accZ_old = accZ_tmp;
-#else
-    UNUSED(accZ_tmp);
-#endif
+    previousTimeUs = currentTimeUs;
 }
 
 
