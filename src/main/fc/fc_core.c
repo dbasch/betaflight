@@ -837,16 +837,6 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
         gyroReadTemperature();
     }
 
-#ifdef USE_MAG
-    if (sensors(SENSOR_MAG)) {
-        updateMagHold();
-    }
-#endif
-
-#ifdef USE_GPS
-    updateGPSRescueState();
-#endif
-
 #if defined(USE_ALT_HOLD)
     // updateRcCommands sets rcCommand, which is needed by updateAltHoldState and updateSonarAltHoldState
     updateRcCommands();
@@ -855,6 +845,16 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
             applyAltHold();
         }
     }
+#endif
+
+#ifdef USE_MAG
+    if (sensors(SENSOR_MAG)) {
+        updateMagHold();
+    }
+#endif
+
+#ifdef USE_GPS
+    updateGPSRescueState();
 #endif
 
     // If we're armed, at minimum throttle, and we do arming via the
