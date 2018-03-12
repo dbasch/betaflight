@@ -433,15 +433,9 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
     }
 #endif
 #if defined(USE_GPS)
-    else if (sensors(SENSOR_GPS) && STATE(GPS_FIX) && gpsSol.numSat >= 5 && gpsSol.groundSpeed >= 300) {
+    else if (sensors(SENSOR_GPS) && STATE(GPS_FIX) && gpsSol.numSat >= 5 && gpsSol.groundSpeed >= 1000) {
         static fastKalman_t fkf; // For filtering ground course noise
         static bool fkfInit = false; // Prevent double initialization
-
-        if (!fkfInit) {
-            // Low Q should make it lag (which is good!)
-            fastKalmanInit(&fkf, 3, 0, 0);
-            fkfInit = true;
-        }
 
         // In case of a fixed-wing aircraft we can use GPS course over ground to correct heading
         if(STATE(FIXED_WING)) {
@@ -454,17 +448,24 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
             if(canUseGPSHeading) {
                 // Change our error tolerance inversely proportional to the throttle.
                 // The higher the throttle value, the more likely the craft is flying towards the angle it is tilted
-                float qGain = 6;
-                float rGain = 0.3;
+                float qGain = 36000;
+                float rGain = 50;
                 float pGain = 1;
 
                 float uncertainty = (1 - constrainf(rcCommand[THROTTLE], 0, 1)) * 0.001f;
                 DEBUG_SET(DEBUG_RTH,3, (int16_t)atan2_approx(attitude.values.roll, attitude.values.pitch));
 
+                if (!fkfInit) {
+                    // Low Q should make it lag (which is good!)
+                    fastKalmanInit(&fkf, qGain, rGain, pGain);
+                    fkfInit = true;
+                }
 
-                fkf.q = uncertainty * qGain;
-                fkf.r = uncertainty * rGain;
-                fkf.p = uncertainty * pGain;
+                float uncertainty = 1 - (scaleRange(rcCommand[THROTTLE], 1000, 2000, 1, 99) / 100.00f);
+
+                fkf.q = qGain * 0.000001f;
+                fkf.r = uncertainty * rGain * 0.001f;
+                fkf.p = pGain * 0.001f;
 
                 int16_t groundCourse = fastKalmanUpdate(
                     &fkf,
