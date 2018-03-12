@@ -21,6 +21,7 @@
 #include "common/axis.h"
 #include "common/maths.h"
 
+#include "build/debug.h"
 #include "io/gps.h"
 
 #include "fc/runtime_config.h"
@@ -51,12 +52,33 @@ void rescueNewGpsData(void)
 
 }
 
+// Very similar to maghold function on betaflight/cleanflight
+void setBearing(int16_t deg)
+{
+    int16_t dif = DECIDEGREES_TO_DEGREES(attitude.values.yaw) - deg;
+
+    if (dif <= -180)
+        dif += 360;
+    if (dif >= +180)
+        dif -= 360;
+    dif *= -GET_DIRECTION(rcControlsConfig()->yaw_control_reversed);
+    DEBUG_SET(DEBUG_RTH,2, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
+    DEBUG_SET(DEBUG_RTH, 3, dif);
+
+
+   // if (STATE(SMALL_ANGLE)) {
+        rcCommand[YAW] -= dif;// * currentPidProfile->pid[PID_MAG].P / 30;    // 18 deg
+}   //}
 /*
     Use the data we have available to set gpsRescueAngles and update internal state
 */
 void updateGPSRescueState(void) 
 
 {
+    DEBUG_SET(DEBUG_RTH,1, GPS_directionToHome);
+    DEBUG_SET(DEBUG_RTH,0, rcCommand[YAW]));
+
+
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         // Reset the rescue angles to zero!
         gpsRescueAngle[AI_PITCH] = 0;
@@ -65,25 +87,22 @@ void updateGPSRescueState(void)
         return;
     }
 
-    applyAltHold();
+    //we are in rescue mode. Here's what we do:
+    //1) if we're far from home, make sure we're on the right course
+    //2) make sure we're moving at a reasonable speed and angle
+    //3) make sure the altitude is reasonable
 
-    //TODO:  Make this work
-    
+     if (ABS(rcCommand[YAW]) < 15) {
+           setBearing(GPS_directionToHome);
+     }
+
+     //applyAltHold();
+
+
     // Just as a test, lets make it pitch forward until our speed is 5m/s
-    if(gpsSol.groundSpeed <= 5000) {
-        gpsRescueAngle[AI_PITCH] = 250; // This might be really bad as it will run a bunch of times before 
+    if(gpsSol.groundSpeed <= 2000) {
+        gpsRescueAngle[AI_PITCH] = 50; // This might be really bad as it will run a bunch of times before
     }
 }
 
-// Very similar to maghold function on betaflight/cleanflight
-void setBearing(int16_t deg)
-{
-    int16_t dif = DECIDEGREES_TO_DEGREES(attitude.values.yaw) - deg;
-    if (dif <= -180)
-        dif += 360;
-    if (dif >= +180)
-        dif -= 360;
-    dif *= -GET_DIRECTION(rcControlsConfig()->yaw_control_reversed);
-    if (STATE(SMALL_ANGLE))
-        rcCommand[YAW] -= dif * currentPidProfile->pid[PID_MAG].P / 30;    // 18 deg
-}
+
