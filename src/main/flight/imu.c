@@ -459,6 +459,8 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                 float pGain = 1;
 
                 float uncertainty = (1 - constrainf(rcCommand[THROTTLE], 0, 1)) * 0.001f;
+                DEBUG_SET(DEBUG_RTH,3, (int16_t)atan2_approx(attitude.values.roll, attitude.values.pitch));
+
 
                 fkf.q = uncertainty * qGain;
                 fkf.r = uncertainty * rGain;
@@ -469,7 +471,9 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                     RADIANS_TO_DECIDEGREES(atan2_approx(attitude.values.roll, attitude.values.pitch)) + gpsSol.groundCourse
                 );
 
-                lastKnownHeading = DECIDEGREES_TO_DEGREES(groundCourse); // So we can retrieve this from within the OSD/etc
+                //Heading = DECIDEGREES_TO_DEGREES(groundCourse); // So we can retrieve this from within the OSD/etc
+                lastKnownHeading = DECIDEGREES_TO_DEGREES(gpsSol.groundCourse);
+
 
                 rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - groundCourse);
             } else {
