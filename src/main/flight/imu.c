@@ -462,7 +462,6 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                 }
 
                 float uncertainty = 1 - (scaleRange(rcCommand[THROTTLE], 1000, 2000, 1, 99) / 100.00f);
-
                 fkf.q = qGain * 0.000001f;
                 fkf.r = uncertainty * rGain * 0.001f;
                 fkf.p = pGain * 0.001f;
