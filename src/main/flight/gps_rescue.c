@@ -76,7 +76,7 @@ void updateGPSRescueState(void)
 
 {
     DEBUG_SET(DEBUG_RTH,1, GPS_directionToHome);
-    DEBUG_SET(DEBUG_RTH,0, rcCommand[YAW]));
+    DEBUG_SET(DEBUG_RTH,0, rcCommand[YAW]);
 
 
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {

@@ -452,7 +452,6 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                 float rGain = 50;
                 float pGain = 1;
 
-                float uncertainty = (1 - constrainf(rcCommand[THROTTLE], 0, 1)) * 0.001f;
                 DEBUG_SET(DEBUG_RTH,3, (int16_t)atan2_approx(attitude.values.roll, attitude.values.pitch));
 
                 if (!fkfInit) {
