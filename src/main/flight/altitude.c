@@ -213,7 +213,7 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     void fastKalmanInit(fastKalman_t *filter, float q, float r, float p);
     float fastKalmanUpdate(fastKalman_t *filter, float input);
 */
-
+/*
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 {
     // No point in running this if we cannot derive accurate data
@@ -299,8 +299,8 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     previousTimeUs = currentTimeUs;
 }
 
+*/
 
-/*
 #if defined(USE_BARO) || defined(USE_RANGEFINDER)
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 {
