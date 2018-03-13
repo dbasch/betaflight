@@ -88,7 +88,7 @@ float accVelScale;
 static float throttleAngleScale;
 static float fc_acc;
 static float smallAngleCosZ = 0;
-static int16_t lastKnownHeading = 0;
+static int32_t lastKnownHeading = 0;
 
 static imuRuntimeConfig_t imuRuntimeConfig;
 
@@ -451,9 +451,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                 float qGain = 36000;
                 float rGain = 50;
                 float pGain = 1;
-
-                DEBUG_SET(DEBUG_RTH,3, (int16_t)atan2_approx(attitude.values.roll, attitude.values.pitch));
-
+                
                 if (!fkfInit) {
                     // Low Q should make it lag (which is good!)
                     fastKalmanInit(&fkf, qGain, rGain, pGain);

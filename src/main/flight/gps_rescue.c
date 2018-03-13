@@ -56,14 +56,14 @@ void setBearing(int16_t deg)
 {
     int16_t dif = DECIDEGREES_TO_DEGREES(attitude.values.yaw) - deg;
 
+    DEBUG_SET(DEBUG_RTH,3, dif);
+
     if (dif <= -180)
         dif += 360;
     if (dif >= +180)
         dif -= 360;
-    dif *= -GET_DIRECTION(rcControlsConfig()->yaw_control_reversed);
 
-    DEBUG_SET(DEBUG_RTH,2, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
-    DEBUG_SET(DEBUG_RTH, 3, dif);
+    dif *= -GET_DIRECTION(rcControlsConfig()->yaw_control_reversed);
 
    // if (STATE(SMALL_ANGLE)) {
     rcCommand[YAW] -= dif;// * currentPidProfile->pid[PID_MAG].P / 30;    // 18 deg
@@ -72,11 +72,10 @@ void setBearing(int16_t deg)
     Use the data we have available to set gpsRescueAngles and update internal state
 */
 void updateGPSRescueState(void) 
-
 {
-    DEBUG_SET(DEBUG_RTH,1, GPS_directionToHome - getHeadingDirection());
     DEBUG_SET(DEBUG_RTH,0, rcCommand[YAW]);
-
+    DEBUG_SET(DEBUG_RTH,1, DECIDEGREES_TO_DEGREES(GPS_directionToHome - getHeadingDirection()));
+    DEBUG_SET(DEBUG_RTH,2, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
 
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         // Reset the rescue angles to zero!

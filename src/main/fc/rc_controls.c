@@ -273,20 +273,9 @@ void processRcStickPositions()
         return;
     }
 
-
     if (rcSticks == THR_HI + YAW_HI + PIT_LO + ROL_CE) {
         // Calibrating Mag
         ENABLE_STATE(CALIBRATE_MAG);
-        return;
-    }
-
-
-    if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
-
-
-        //hackety hack DIEGO to test that the mode works
-        DEBUG_SET(DEBUG_RTH, 1, 14);
-
         return;
     }
 
