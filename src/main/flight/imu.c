@@ -471,7 +471,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                 );
 
                 //Heading = DECIDEGREES_TO_DEGREES(groundCourse); // So we can retrieve this from within the OSD/etc
-                lastKnownHeading = DECIDEGREES_TO_DEGREES(groundCourse);
+                lastKnownHeading = groundCourse;
 
                 rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - groundCourse);
             } else {
