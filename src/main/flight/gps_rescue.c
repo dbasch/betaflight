@@ -78,7 +78,7 @@ void setBearing(int16_t deg)
 void updateGPSRescueState(void) 
 
 {
-    DEBUG_SET(DEBUG_RTH,1, GPS_directionToHome);
+    DEBUG_SET(DEBUG_RTH,1, targetBearing);
     DEBUG_SET(DEBUG_RTH,0, rcCommand[YAW]);
 
 
@@ -96,7 +96,8 @@ void updateGPSRescueState(void)
     //3) make sure the altitude is reasonable
 
      if (ABS(rcCommand[YAW]) < 20) {
-        setBearing(targetBearing - getHeadingDirection());
+        float t = (targetBearing / 100) - getHeadingDirection();
+        setBearing(t);
      }
 
      //applyAltHold();
