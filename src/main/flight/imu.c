@@ -257,7 +257,7 @@ static float imuGetPGainScaleFactor(void)
 static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
                                 bool useAcc, float ax, float ay, float az,
                                 bool useMag, float mx, float my, float mz,
-                                bool useYaw, float yawError)
+                                bool useYaw, float yawError, bool useCOG, float courseOverGround)
 {
     static float integralFBx = 0.0f,  integralFBy = 0.0f, integralFBz = 0.0f;    // integral error terms scaled by Ki
 
@@ -270,6 +270,22 @@ static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
         while (yawError >  M_PIf) yawError -= (2.0f * M_PIf);
         while (yawError < -M_PIf) yawError += (2.0f * M_PIf);
         ez += sin_approx(yawError / 2.0f);
+    }
+
+    if (useCOG) {
+        // Use raw heading error (from GPS or whatever else)
+        while (courseOverGround >  M_PIf) courseOverGround -= (2.0f * M_PIf);
+        while (courseOverGround < -M_PIf) courseOverGround += (2.0f * M_PIf);
+
+        // William Premerlani and Paul Bizard, Direction Cosine Matrix IMU - Eqn. 22-23
+        // (Rxx; Ryx) - measured (estimated) heading vector (EF)
+        // (cos(COG), sin(COG)) - reference heading vector (EF)
+        // error is cross product between reference heading and estimated heading (calculated in EF)
+        const float ez_ef = - sin_approx(courseOverGround) * rMat[0][0] - cos_approx(courseOverGround) * rMat[1][0];
+
+        ex = rMat[2][0] * ez_ef;
+        ey = rMat[2][1] * ez_ef;
+        ez = rMat[2][2] * ez_ef;
     }
 
 #ifdef USE_MAG
@@ -415,10 +431,13 @@ static bool imuIsAccelerometerHealthy(void)
 static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
 {
     static timeUs_t previousIMUUpdateTime;
-    float rawYawError = 0;
+    
     bool useAcc = false;
     bool useMag = false;
     bool useYaw = false;
+    bool useCOG = false; // Whether or not correct yaw via imuMahonyAHRSupdate from our ground course
+    float courseOverGround = 0; // To be used when useCOG is true 
+    float rawYawError = 0;
 
     const timeDelta_t deltaT = currentTimeUs - previousIMUUpdateTime;
     previousIMUUpdateTime = currentTimeUs;
@@ -451,7 +470,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                 float qGain = 36000;
                 float rGain = 50;
                 float pGain = 1;
-                
+
                 if (!fkfInit) {
                     // Low Q should make it lag (which is good!)
                     fastKalmanInit(&fkf, qGain, rGain, pGain);
@@ -467,6 +486,9 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                     &fkf,
                     RADIANS_TO_DECIDEGREES(atan2_approx(attitude.values.roll, attitude.values.pitch)) + gpsSol.groundCourse
                 );
+
+                useCOG = true;
+                courseOverGround = DECIDEGREES_TO_RADIANS(groundCourse);
 
                 //Heading = DECIDEGREES_TO_DEGREES(groundCourse); // So we can retrieve this from within the OSD/etc
                 lastKnownHeading = groundCourse;
@@ -503,7 +525,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                         DEGREES_TO_RADIANS(gyroAverage[X]), DEGREES_TO_RADIANS(gyroAverage[Y]), DEGREES_TO_RADIANS(gyroAverage[Z]),
                         useAcc, accAverage[X], accAverage[Y], accAverage[Z],
                         useMag, mag.magADC[X], mag.magADC[Y], mag.magADC[Z],
-                        useYaw, rawYawError);
+                        useYaw, rawYawError, useCOG, courseOverGround);
 
     imuUpdateEulerAngles();
 #endif
