@@ -837,16 +837,6 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
         gyroReadTemperature();
     }
 
-#if defined(USE_ALT_HOLD)
-    // updateRcCommands sets rcCommand, which is needed by updateAltHoldState and updateSonarAltHoldState
-    updateRcCommands();
-    if (sensors(SENSOR_BARO) || sensors(SENSOR_RANGEFINDER) || sensors(SENSOR_GPS)) {
-        if (FLIGHT_MODE(BARO_MODE) || FLIGHT_MODE(RANGEFINDER_MODE)) {
-            applyAltHold();
-        }
-    }
-#endif
-
 #ifdef USE_MAG
     if (sensors(SENSOR_MAG)) {
         updateMagHold();
@@ -855,6 +845,16 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
 
 #ifdef USE_GPS
     updateGPSRescueState();
+#endif
+
+#if defined(USE_ALT_HOLD)
+    // updateRcCommands sets rcCommand, which is needed by updateAltHoldState and updateSonarAltHoldState
+    updateRcCommands();
+    if (sensors(SENSOR_BARO) || sensors(SENSOR_RANGEFINDER) || sensors(SENSOR_GPS)) {
+        if (FLIGHT_MODE(BARO_MODE) || FLIGHT_MODE(RANGEFINDER_MODE)) {
+            applyAltHold();
+        }
+    }
 #endif
 
     // If we're armed, at minimum throttle, and we do arming via the

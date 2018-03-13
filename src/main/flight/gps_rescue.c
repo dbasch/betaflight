@@ -38,6 +38,8 @@
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
 
+static int32_t       targetBearing; // In centidegrees (100 = 1deg)
+static uint32_t      homeDist;
 // TEMPORARY SETTINGS UNTIL WE BOTHER ADDING REAL ONES
 
 
@@ -50,6 +52,7 @@ void rescueNewGpsData(void)
    if (!ARMING_FLAG(ARMED))
     GPS_reset_home_position();
 
+    GPS_distance_cm_bearing(&gpsSol.llh.lat, &gpsSol.llh.lon, &GPS_home[LAT], &GPS_home[LON], homeDist, &targetBearing);
 }
 
 // Very similar to maghold function on betaflight/cleanflight
@@ -62,12 +65,12 @@ void setBearing(int16_t deg)
     if (dif >= +180)
         dif -= 360;
     dif *= -GET_DIRECTION(rcControlsConfig()->yaw_control_reversed);
+
     DEBUG_SET(DEBUG_RTH,2, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
     DEBUG_SET(DEBUG_RTH, 3, dif);
 
-
    // if (STATE(SMALL_ANGLE)) {
-        rcCommand[YAW] -= dif;// * currentPidProfile->pid[PID_MAG].P / 30;    // 18 deg
+    rcCommand[YAW] -= dif;// * currentPidProfile->pid[PID_MAG].P / 30;    // 18 deg
 }   //}
 /*
     Use the data we have available to set gpsRescueAngles and update internal state
@@ -92,8 +95,8 @@ void updateGPSRescueState(void)
     //2) make sure we're moving at a reasonable speed and angle
     //3) make sure the altitude is reasonable
 
-     if (ABS(rcCommand[YAW]) < 15) {
-           setBearing(GPS_directionToHome);
+     if (ABS(rcCommand[YAW]) < 20) {
+        setBearing(targetBearing - getHeadingDirection());
      }
 
      //applyAltHold();
