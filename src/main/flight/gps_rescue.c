@@ -52,7 +52,7 @@ void rescueNewGpsData(void)
    if (!ARMING_FLAG(ARMED))
     GPS_reset_home_position();
 
-    GPS_distance_cm_bearing(&gpsSol.llh.lat, &gpsSol.llh.lon, &GPS_home[LAT], &GPS_home[LON], homeDist, &targetBearing);
+    GPS_distance_cm_bearing(&gpsSol.llh.lat, &gpsSol.llh.lon, &GPS_home[LAT], &GPS_home[LON], &homeDist, &targetBearing);
 }
 
 // Very similar to maghold function on betaflight/cleanflight
