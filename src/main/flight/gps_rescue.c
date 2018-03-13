@@ -73,7 +73,7 @@ void setBearing(int16_t deg)
 */
 void updateGPSRescueState(void) 
 {
-    DEBUG_SET(DEBUG_RTH,0, rcCommand[YAW]);
+    DEBUG_SET(DEBUG_RTH,0, DECIDEGREES_TO_DEGREES(getHeadingDirection());
     DEBUG_SET(DEBUG_RTH,1, DECIDEGREES_TO_DEGREES(GPS_directionToHome - getHeadingDirection()));
     DEBUG_SET(DEBUG_RTH,2, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
 
