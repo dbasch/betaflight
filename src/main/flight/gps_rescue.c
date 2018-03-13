@@ -56,14 +56,14 @@ void setBearing(int16_t deg)
 {
     int16_t dif = DECIDEGREES_TO_DEGREES(attitude.values.yaw) - deg;
 
-    DEBUG_SET(DEBUG_RTH,3, dif);
-
     if (dif <= -180)
         dif += 360;
     if (dif >= +180)
         dif -= 360;
 
     dif *= -GET_DIRECTION(rcControlsConfig()->yaw_control_reversed);
+
+    DEBUG_SET(DEBUG_RTH,3, dif);
 
    // if (STATE(SMALL_ANGLE)) {
     rcCommand[YAW] -= dif;// * currentPidProfile->pid[PID_MAG].P / 30;    // 18 deg
