@@ -66,15 +66,15 @@ void setBearing(int16_t deg)
     DEBUG_SET(DEBUG_RTH,3, dif);
 
    // if (STATE(SMALL_ANGLE)) {
-    rcCommand[YAW] -= dif;// * currentPidProfile->pid[PID_MAG].P / 30;    // 18 deg
+    rcCommand[YAW] -= dif * currentPidProfile->pid[PID_NAVR].P / 20;// * currentPidProfile->pid[PID_MAG].P / 30;    // 18 deg
 }   //}
 /*
     Use the data we have available to set gpsRescueAngles and update internal state
 */
 void updateGPSRescueState(void) 
 {
-    DEBUG_SET(DEBUG_RTH,0, DECIDEGREES_TO_DEGREES(getHeadingDirection()));
-    DEBUG_SET(DEBUG_RTH,1, DECIDEGREES_TO_DEGREES(GPS_directionToHome - getHeadingDirection()));
+    DEBUG_SET(DEBUG_RTH,0, getHeadingDirection());
+    DEBUG_SET(DEBUG_RTH,1, GPS_directionToHome);
     DEBUG_SET(DEBUG_RTH,2, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
 
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
@@ -91,7 +91,7 @@ void updateGPSRescueState(void)
     //3) make sure the altitude is reasonable
 
      if (ABS(rcCommand[YAW]) < 20) {
-        setBearing(GPS_directionToHome - getHeadingDirection());
+        setBearing(GPS_directionToHome);
      }
 
      //applyAltHold();
