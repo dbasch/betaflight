@@ -467,9 +467,9 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
             if(canUseGPSHeading) {
                 // Change our error tolerance inversely proportional to the throttle.
                 // The higher the throttle value, the more likely the craft is flying towards the angle it is tilted
-                float qGain = 36000;
-                float rGain = 50;
-                float pGain = 1;
+                float qGain = 18000;
+                float rGain = 25;
+                float pGain = .5;
 
                 if (!fkfInit) {
                     // Low Q should make it lag (which is good!)
