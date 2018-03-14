@@ -462,19 +462,10 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
             // probably stop re calculating GPS heading data
 
             if (canUseGPSHeading) { // This flag is determined by gps_rescue.h
-                float gyroAverage[XYZ_AXIS_COUNT];
-                gyroGetAccumulationAverage(gyroAverage);
-
-                float spinRate = sqrtf(sq(DEGREES_TO_RADIANS(gyroAverage[X])) + sq(DEGREES_TO_RADIANS(gyroAverage[Y])) + sq(DEGREES_TO_RADIANS(gyroAverage[Z]))); // Calculate the general spin rate in rad/s
-
-                DEBUG_SET(DEBUG_RTH,0, RADIANS_TO_DECIDEGREES(spinRate) / 10);
-
-                if (spinRate <= 0.349066f) { // Only trust GPS heading when general spin rate is less than 20 degrees per second :P 
-                    float tiltDirection = atan2_approx(attitude.values.roll, attitude.values.pitch); // For applying correction to heading based on craft tilt in 2d space
-                    courseOverGround = tiltDirection + DECIDEGREES_TO_RADIANS(gpsSol.groundCourse);
-                    rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - courseOverGround);
-                    useCOG = true; // Tell the IMU to correct attitude.values.yaw with this data
-                }
+                float tiltDirection = atan2_approx(attitude.values.roll, attitude.values.pitch); // For applying correction to heading based on craft tilt in 2d space
+                courseOverGround = tiltDirection + DECIDEGREES_TO_RADIANS(gpsSol.groundCourse);
+                rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw) - courseOverGround;
+                useCOG = true; // Tell the IMU to correct attitude.values.yaw with this data
             } else {
                 rawYawError = 0;
             }

@@ -85,7 +85,7 @@ void updateGPSRescueState(void)
         return;
     }
 
-    canUseGPSHeading = false; // Stop taking in new GPS heading data when this mode is active.  We're going to rely on gyro only from this point forwards 
+    //canUseGPSHeading = false; // Stop taking in new GPS heading data when this mode is active.  We're going to rely on gyro only from this point forwards 
 
     //we are in rescue mode. Here's what we do:
     //1) if we're far from home, make sure we're on the right course
