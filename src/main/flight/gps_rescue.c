@@ -73,7 +73,6 @@ void setBearing(int16_t deg)
 */
 void updateGPSRescueState(void) 
 {
-    DEBUG_SET(DEBUG_RTH,0, getHeadingDirection());
     DEBUG_SET(DEBUG_RTH,1, GPS_directionToHome);
     DEBUG_SET(DEBUG_RTH,2, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
 
@@ -81,26 +80,27 @@ void updateGPSRescueState(void)
         // Reset the rescue angles to zero!
         gpsRescueAngle[AI_PITCH] = 0;
         gpsRescueAngle[AI_ROLL] = 0;
+        canUseGPSHeading = true;
 
         return;
     }
+
+    canUseGPSHeading = false; // Stop taking in new GPS heading data when this mode is active.  We're going to rely on gyro only from this point forwards 
 
     //we are in rescue mode. Here's what we do:
     //1) if we're far from home, make sure we're on the right course
     //2) make sure we're moving at a reasonable speed and angle
     //3) make sure the altitude is reasonable
 
-     if (ABS(rcCommand[YAW]) < 20) {
+
+
+    if (ABS(rcCommand[YAW]) < 20) {
         setBearing(GPS_directionToHome);
-     }
+    }
 
      //applyAltHold();
 
-
-    // Just as a test, lets make it pitch forward until our speed is 5m/s
-    if(gpsSol.groundSpeed <= 2000) {
-        gpsRescueAngle[AI_PITCH] = 50; // This might be really bad as it will run a bunch of times before
-    }
+    gpsRescueAngle[AI_PITCH] = 50; 
 }
 
 

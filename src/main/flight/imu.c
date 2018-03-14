@@ -28,7 +28,6 @@
 
 #include "common/axis.h"
 #include "common/maths.h"
-#include "common/filter.h"
 
 #include "pg/pg.h"
 #include "pg/pg_ids.h"
@@ -88,7 +87,6 @@ float accVelScale;
 static float throttleAngleScale;
 static float fc_acc;
 static float smallAngleCosZ = 0;
-static int32_t lastKnownHeading = 0;
 
 static imuRuntimeConfig_t imuRuntimeConfig;
 
@@ -257,7 +255,7 @@ static float imuGetPGainScaleFactor(void)
 static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
                                 bool useAcc, float ax, float ay, float az,
                                 bool useMag, float mx, float my, float mz,
-                                bool useYaw, float yawError)
+                                bool useYaw, float yawError, bool useCOG, float courseOverGround)
 {
     static float integralFBx = 0.0f,  integralFBy = 0.0f, integralFBz = 0.0f;    // integral error terms scaled by Ki
 
@@ -270,6 +268,22 @@ static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
         while (yawError >  M_PIf) yawError -= (2.0f * M_PIf);
         while (yawError < -M_PIf) yawError += (2.0f * M_PIf);
         ez += sin_approx(yawError / 2.0f);
+    }
+
+    if (useCOG) {
+        // Use raw heading error (from GPS or whatever else)
+        while (courseOverGround >  M_PIf) courseOverGround -= (2.0f * M_PIf);
+        while (courseOverGround < -M_PIf) courseOverGround += (2.0f * M_PIf);
+
+        // William Premerlani and Paul Bizard, Direction Cosine Matrix IMU - Eqn. 22-23
+        // (Rxx; Ryx) - measured (estimated) heading vector (EF)
+        // (cos(COG), sin(COG)) - reference heading vector (EF)
+        // error is cross product between reference heading and estimated heading (calculated in EF)
+        const float ez_ef = - sin_approx(courseOverGround) * rMat[0][0] - cos_approx(courseOverGround) * rMat[1][0];
+
+        ex = rMat[2][0] * ez_ef;
+        ey = rMat[2][1] * ez_ef;
+        ez = rMat[2][2] * ez_ef;
     }
 
 #ifdef USE_MAG
@@ -415,10 +429,13 @@ static bool imuIsAccelerometerHealthy(void)
 static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
 {
     static timeUs_t previousIMUUpdateTime;
-    float rawYawError = 0;
+
     bool useAcc = false;
     bool useMag = false;
     bool useYaw = false;
+    bool useCOG = false; // Whether or not correct yaw via imuMahonyAHRSupdate from our ground course
+    float courseOverGround = 0; // To be used when useCOG is true.  Stored in Radians
+    float rawYawError = 0;
 
     const timeDelta_t deltaT = currentTimeUs - previousIMUUpdateTime;
     previousIMUUpdateTime = currentTimeUs;
@@ -433,45 +450,28 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
     }
 #endif
 #if defined(USE_GPS)
-    else if (sensors(SENSOR_GPS) && STATE(GPS_FIX) && gpsSol.numSat >= 5 && gpsSol.groundSpeed >= 1000) {
-        static fastKalman_t fkf; // For filtering ground course noise
-        static bool fkfInit = false; // Prevent double initialization
-
+    else if (sensors(SENSOR_GPS) && STATE(GPS_FIX) && gpsSol.numSat >= 5 && gpsSol.groundSpeed >= 600) {
         // In case of a fixed-wing aircraft we can use GPS course over ground to correct heading
         if(STATE(FIXED_WING)) {
             rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - gpsSol.groundCourse);
             useYaw = true;
+            useCOG = true;
         } else {
             // If GPS rescue mode is active and we can use it, go for it.  When we're close to home we will 
             // probably stop re calculating GPS heading data
 
-            if(canUseGPSHeading) {
-                // Change our error tolerance inversely proportional to the throttle.
-                // The higher the throttle value, the more likely the craft is flying towards the angle it is tilted
-                float qGain = 36000;
-                float rGain = 50;
-                float pGain = 1;
-                
-                if (!fkfInit) {
-                    // Low Q should make it lag (which is good!)
-                    fastKalmanInit(&fkf, qGain, rGain, pGain);
-                    fkfInit = true;
+            if (canUseGPSHeading) { // This flag is determined by gps_rescue.h
+                float gyroAverage[XYZ_AXIS_COUNT];
+                gyroGetAccumulationAverage(gyroAverage);
+
+                float spinRate = sqrtf(sq(DEGREES_TO_RADIANS(gyroAverage[X])) + sq(DEGREES_TO_RADIANS(gyroAverage[Y])) + sq(DEGREES_TO_RADIANS(gyroAverage[Z]))); // Calculate the general spin rate in rad/s
+
+                if (spinRate <= 0.349066f) { // Only trust GPS heading when general spin rate is less than 20 degrees per second :P 
+                    float tiltDirection = atan2_approx(attitude.values.roll, attitude.values.pitch); // For applying correction to heading based on craft tilt in 2d space
+                    courseOverGround = tiltDirection + DECIDEGREES_TO_RADIANS(gpsSol.groundCourse);
+                    rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - courseOverGround);
+                    useCOG = true; // Tell the IMU to correct attitude.values.yaw with this data
                 }
-
-                float uncertainty = 1 - (scaleRange(rcCommand[THROTTLE], 1000, 2000, 1, 99) / 100.00f);
-                fkf.q = qGain * 0.000001f;
-                fkf.r = uncertainty * rGain * 0.001f;
-                fkf.p = pGain * 0.001f;
-
-                int16_t groundCourse = fastKalmanUpdate(
-                    &fkf,
-                    RADIANS_TO_DECIDEGREES(atan2_approx(attitude.values.roll, attitude.values.pitch)) + gpsSol.groundCourse
-                );
-
-                //Heading = DECIDEGREES_TO_DEGREES(groundCourse); // So we can retrieve this from within the OSD/etc
-                lastKnownHeading = groundCourse;
-
-                rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - groundCourse);
             } else {
                 rawYawError = 0;
             }
@@ -503,7 +503,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                         DEGREES_TO_RADIANS(gyroAverage[X]), DEGREES_TO_RADIANS(gyroAverage[Y]), DEGREES_TO_RADIANS(gyroAverage[Z]),
                         useAcc, accAverage[X], accAverage[Y], accAverage[Z],
                         useMag, mag.magADC[X], mag.magADC[Y], mag.magADC[Z],
-                        useYaw, rawYawError);
+                        useYaw, rawYawError, useCOG, courseOverGround);
 
     imuUpdateEulerAngles();
 #endif
@@ -652,9 +652,4 @@ void imuQuaternionHeadfreeTransformVectorEarthToBody(t_fp_vector_def *v)
     v->X = x;
     v->Y = y;
     v->Z = z;
-}
-
-int16_t getHeadingDirection()
-{
-    return lastKnownHeading;
 }
