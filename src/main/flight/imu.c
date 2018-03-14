@@ -454,6 +454,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
         // In case of a fixed-wing aircraft we can use GPS course over ground to correct heading
         if(STATE(FIXED_WING)) {
             rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - gpsSol.groundCourse);
+            courseOverGround = DECIDEGREES_TO_RADIANS(gpsSol.groundCourse);
             useYaw = true;
             useCOG = true;
         } else {
