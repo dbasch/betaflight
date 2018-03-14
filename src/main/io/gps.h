@@ -69,6 +69,7 @@ typedef struct gpsConfig_s {
     sbasMode_e sbasMode;
     gpsAutoConfig_e autoConfig;
     gpsAutoBaud_e autoBaud;
+    int16_t gpsRescueAngle; //XXX we should break this out into its own config maybe
 } gpsConfig_t;
 
 PG_DECLARE(gpsConfig_t, gpsConfig);

@@ -100,7 +100,7 @@ void updateGPSRescueState(void)
 
      //applyAltHold();
 
-    gpsRescueAngle[AI_PITCH] = 50; 
+    gpsRescueAngle[AI_PITCH] = gpsConfig()->gpsRescueAngle;
 }
 
 
