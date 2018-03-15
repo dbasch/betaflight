@@ -853,6 +853,10 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
     }
 #endif
 
+#ifdef USE_GPS
+    updateGPSRescueState();
+#endif
+
     // If we're armed, at minimum throttle, and we do arming via the
     // sticks, do not process yaw input from the rx.  We do this so the
     // motors do not spin up while we are trying to arm or disarm.
@@ -874,10 +878,6 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
     }
 
     processRcCommand();
-
-#ifdef USE_GPS
-    updateGPSRescueState();
-#endif
 
 #ifdef USE_SDCARD
     afatfs_poll();
