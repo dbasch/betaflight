@@ -462,10 +462,6 @@ int32_t getEstimatedVario(void)
 }
 
 void setAltitude(uint16_t targetAltitude) {
-    if (initialThrottleHold == 0) {
-        initialThrottleHold = 1300;
-    }
-
     AltHold = targetAltitude * 100; //Convert meters to cm
     /*
     //crude attempt #1, this probably won't work
