@@ -289,13 +289,11 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
             return;
         }
 
-        int32_t gpsAlt = gpsSol.llh.alt*100;
-
         if(!ARMING_FLAG(ARMED)){
-            altOffsetCm = gpsAlt;
+            altOffsetCm = gpsSol.llh.alt;
         }
 
-        estimatedAltitude = gpsAlt + altOffsetCm; // Correct our altitude offset
+        estimatedAltitude = gpsSol.llh.alt + altOffsetCm; // Correct our altitude offset
     }
 
 

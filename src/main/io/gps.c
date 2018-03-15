@@ -989,7 +989,7 @@ static bool UBLOX_parse_gps(void)
         //i2c_dataset.time                = _buffer.posllh.time;
         gpsSol.llh.lon = _buffer.posllh.longitude;
         gpsSol.llh.lat = _buffer.posllh.latitude;
-        gpsSol.llh.alt = _buffer.posllh.altitude_msl / 10 / 100;  //alt in m
+        gpsSol.llh.alt = _buffer.posllh.altitude_msl / 10;  //alt in cm
         if (next_fix) {
             ENABLE_STATE(GPS_FIX);
         } else {
