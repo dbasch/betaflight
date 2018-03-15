@@ -100,12 +100,12 @@ void updateGPSRescueState(void)
     uint8_t safetyMargin = 10; // really we want to get this from actual data
     uint16_t targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude;
      //are we beyond descent_distance? If so, set safe altitude
-     if (GPS_distanceToHome > gpsConfig()->gpsRescueDescentDistance) {
+     if (GPS_distanceToHome < gpsConfig()->gpsRescueDescentDistance) {
           //this is a hack - linear descent
-          targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude * (1.0 - GPS_distanceToHome/gpsConfig()->gpsRescueDescentDistance);
-          DEBUG_SET(DEBUG_RTH, 0, targetAltitude);
+          targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude * GPS_distanceToHome / gpsConfig()->gpsRescueDescentDistance;
      }
-     
+     DEBUG_SET(DEBUG_RTH, 0, targetAltitude);
+
      setAltitude(targetAltitude);
      applyAltHold();
 
