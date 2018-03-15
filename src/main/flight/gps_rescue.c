@@ -73,8 +73,8 @@ void setBearing(int16_t deg)
 */
 void updateGPSRescueState(void) 
 {
-    DEBUG_SET(DEBUG_RTH,1, GPS_directionToHome);
-    DEBUG_SET(DEBUG_RTH,2, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
+    //DEBUG_SET(DEBUG_RTH,1, GPS_directionToHome);
+    //DEBUG_SET(DEBUG_RTH,2, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
 
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         // Reset the rescue angles to zero!
