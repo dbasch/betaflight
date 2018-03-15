@@ -225,6 +225,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     static fastKalman_t fkf; // For filtering barometer noise
     static bool fkfInit = false; // Prevent double initialization
     static float vel = 0.0f;
+    static int32_t altOffsetCm = 0; // So we can set our on the ground position as zero
 
     const uint32_t dTime = currentTimeUs - previousTimeUs;
 
@@ -247,9 +248,13 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
         if (!isBaroCalibrationComplete()) {
             performBaroCalibrationCycle();
         } else {
-            baroAlt = baroCalculateAltitude();
+            baroAlt = fastKalmanUpdate(&fkf, baroCalculateAltitude());
 
-            estimatedAltitude = fastKalmanUpdate(&fkf, baroAlt);
+            if(!ARMING_FLAG(ARMED)){
+                altOffsetCm = baroAlt;
+            }
+
+            estimatedAltitude = baroAlt + altOffsetCm;
 
             static int32_t lastBaroAlt = 0;
 
@@ -284,15 +289,13 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
             return;
         }
 
-        estimatedAltitude = gpsSol.llh.alt*100;
+        int32_t gpsAlt = gpsSol.llh.alt*100;
 
-        if (!fkfInit) {
-            // TODO:  Tune these values
-            fastKalmanInit(&fkf, 3, 0.2, 2);
-            fkfInit = true;
+        if(!ARMING_FLAG(ARMED)){
+            altOffsetCm = gpsAlt;
         }
 
-        estimatedAltitude = fastKalmanUpdate(&fkf, gpsSol.llh.alt*100);
+        estimatedAltitude = gpsAlt + altOffsetCm; // Correct our altitude offset
     }
 
 
