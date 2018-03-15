@@ -63,6 +63,7 @@ enum {
 
 // 40hz update rate (20hz LPF on acc)
 #define BARO_UPDATE_FREQUENCY_40HZ (1000 * 25)
+#define GPS_UPDATE_FREQUENCY_5HZ (1000 * 200000)
 
 #if defined(USE_ALT_HOLD)
 
@@ -254,7 +255,9 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
                 altOffsetCm = baroAlt;
             }
 
-            estimatedAltitude = baroAlt + altOffsetCm;
+            baroAlt = baroAlt - altOffsetCm;
+
+            estimatedAltitude = baroAlt;
 
             static int32_t lastBaroAlt = 0;
 
@@ -289,11 +292,50 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
             return;
         }
 
+        if (dTime < GPS_UPDATE_FREQUENCY_5HZ) {
+            return;
+        }
+
+        static float accZ_old = 0.0f;
+
+        int32_t gpsAlt = 0;
+        int32_t gpsVel = 0;
+
         if(!ARMING_FLAG(ARMED)){
             altOffsetCm = gpsSol.llh.alt;
         }
 
-        estimatedAltitude = gpsSol.llh.alt + altOffsetCm; // Correct our altitude offset
+        gpsAlt = gpsSol.llh.alt - altOffsetCm;
+
+        estimatedAltitude = gpsAlt; // Correct our altitude offset
+
+        static int32_t lastGPSAlt = 0;
+
+        gpsVel = (gpsAlt - lastGPSAlt) * 1000000.0f / dTime;
+        lastGPSAlt = gpsAlt;
+
+        gpsVel = constrain(gpsVel, -1500, 1500);
+        gpsVel = applyDeadband(gpsVel, 25);
+
+        vel = vel * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel) + gpsVel * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel));
+
+        int32_t vel_tmp = lrintf(vel);
+        float accZ_tmp = 0;
+
+        if (accSumCount) {
+            accZ_tmp = (float)accSum[2] / accSumCount;
+        }
+
+        estimatedVario = applyDeadband(vel_tmp, 5);
+
+        imuResetAccelerationSum();
+
+        #ifdef USE_ALT_HOLD
+            altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
+            accZ_old = accZ_tmp;
+        #else
+            UNUSED(accZ_tmp);
+        #endif
     }
 
 
