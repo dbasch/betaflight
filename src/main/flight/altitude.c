@@ -98,6 +98,8 @@ static void applyMultirotorAltHold(void)
                 isAltHoldChanged = 0;
             }
             rcCommand[THROTTLE] = constrain(initialThrottleHold + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX);
+
+            DEBUG_SET(DEBUG_RTH, 3, constrain(initialThrottleHold + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX));
         }
     } else {
         // slow alt changes, mostly used for aerial photography
@@ -112,6 +114,8 @@ static void applyMultirotorAltHold(void)
             isAltHoldChanged = 0;
         }
         rcCommand[THROTTLE] = constrain(initialThrottleHold + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX);
+
+        DEBUG_SET(DEBUG_RTH, 3, constrain(initialThrottleHold + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX));
     }
 }
 
