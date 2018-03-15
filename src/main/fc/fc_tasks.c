@@ -145,6 +145,7 @@ static void taskUpdateRxMain(timeUs_t currentTimeUs)
 #endif
     updateArmingStatus();
 
+/*
 #ifdef USE_ALT_HOLD
 
     if (sensors(SENSOR_BARO) || sensors(SENSOR_GPS)) {
@@ -158,6 +159,7 @@ static void taskUpdateRxMain(timeUs_t currentTimeUs)
     }
 #endif
 #endif // USE_ALT_HOLD
+*/
 }
 #endif
 

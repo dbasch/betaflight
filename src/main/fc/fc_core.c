@@ -843,7 +843,9 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
     }
 #endif
 
-updateRcCommands();
+#ifdef USE_ALT_HOLD
+    updateRcCommands();
+#endif
 
 /*
 #if defined(USE_ALT_HOLD)
