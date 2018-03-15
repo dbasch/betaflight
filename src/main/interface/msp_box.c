@@ -176,9 +176,9 @@ void initActiveBoxIds(void)
     }
 
 #ifdef USE_BARO
-    if (sensors(SENSOR_BARO)) {
+    //if (sensors(SENSOR_BARO)) {
         BME(BOXBARO);
-    }
+    //}
 #endif
 
 #ifdef USE_MAG
