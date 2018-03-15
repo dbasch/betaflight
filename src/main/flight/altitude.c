@@ -84,6 +84,7 @@ static int16_t initialThrottleHold = 0;
 
 static void applyMultirotorAltHold(void)
 {
+    /*
     static uint8_t isAltHoldChanged = 0;
     // multirotor alt hold
     if (rcControlsConfig()->alt_hold_fast_change) {
@@ -116,7 +117,11 @@ static void applyMultirotorAltHold(void)
         rcCommand[THROTTLE] = constrain(initialThrottleHold + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX);
 
         DEBUG_SET(DEBUG_RTH, 3, constrain(initialThrottleHold + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX));
-    }
+    }*/
+
+    rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX);
+
+    DEBUG_SET(DEBUG_RTH, 3, rcCommand[THROTTLE]);
 }
 
 static void applyFixedWingAltHold(void)
