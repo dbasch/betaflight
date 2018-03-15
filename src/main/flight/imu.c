@@ -465,8 +465,6 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                 float tiltDirection = atan2_approx(attitude.values.roll, attitude.values.pitch); // For applying correction to heading based on craft tilt in 2d space
                 courseOverGround = tiltDirection + DECIDEGREES_TO_RADIANS(gpsSol.groundCourse);
 
-                DEBUG_SET(DEBUG_RTH, 0, RADIANS_TO_DECIDEGREES(courseOverGround));
-
                 rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw) - courseOverGround;
                 useCOG = true; // Tell the IMU to correct attitude.values.yaw with this data
             } else {

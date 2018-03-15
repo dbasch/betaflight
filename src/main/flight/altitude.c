@@ -414,7 +414,7 @@ void setAltitude(uint16_t targetAltitude) {
         initialThrottleHold = 1300;
     }
 
-    AltHold = targetAltitude;
+    AltHold = targetAltitude * 100; //Convert meters to cm
 
     applyAltHold();
     /*

@@ -103,7 +103,9 @@ void updateGPSRescueState(void)
      if (GPS_distanceToHome > gpsConfig()->gpsRescueDescentDistance) {
           //this is a hack - linear descent
           targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude * (1.0 - GPS_distanceToHome/gpsConfig()->gpsRescueDescentDistance);
+          DEBUG_SET(DEBUG_RTH, 0, targetAltitude);
      }
+     
      setAltitude(targetAltitude);
 
     gpsRescueAngle[AI_PITCH] = gpsConfig()->gpsRescueAngle;
