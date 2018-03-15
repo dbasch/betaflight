@@ -408,3 +408,6 @@ int32_t getEstimatedVario(void)
 {
     return estimatedVario;
 }
+
+void setAltitude(uint16_t targetAltitude) {
+}

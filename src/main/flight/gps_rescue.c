@@ -97,8 +97,14 @@ void updateGPSRescueState(void)
     if (ABS(rcCommand[YAW]) < 20) {
         setBearing(GPS_directionToHome);
     }
-
-     //applyAltHold();
+    uint8_t safetyMargin = 10; // really we want to get this from actual data
+    uint16_t targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude;
+     //are we beyond descent_distance? If so, set safe altitude
+     if (GPS_distanceToHome > gpsConfig()->gpsRescueDescentDistance) {
+          //this is a hack - linear descent
+          targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude * (1.0 - GPS_distanceToHome/gpsConfig()->gpsRescueDescentDistance);
+     }
+     setAltitude(targetAltitude);
 
     gpsRescueAngle[AI_PITCH] = gpsConfig()->gpsRescueAngle;
 }

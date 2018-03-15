@@ -34,3 +34,4 @@ int32_t getEstimatedVario(void);
 void applyAltHold(void);
 void updateAltHoldState(void);
 void updateRangefinderAltHoldState(void);
+void setAltitude(uint16_t targetAltitude);
