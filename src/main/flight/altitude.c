@@ -76,7 +76,7 @@ static int32_t setVelocity = 0;
 static uint8_t velocityControl = 0;
 static int32_t errorVelocityI = 0;
 static int32_t altHoldThrottleAdjustment = 0;
-static int16_t initialThrottleHold;
+static int16_t initialThrottleHold = 0;
 
 
 #define DEGREES_80_IN_DECIDEGREES 800
@@ -134,6 +134,7 @@ void applyAltHold(void)
 
 void updateAltHoldState(void)
 {
+
     // Baro alt hold activate
     if (!IS_RC_MODE_ACTIVE(BOXBARO)) {
         DISABLE_FLIGHT_MODE(BARO_MODE);
@@ -213,7 +214,6 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     void fastKalmanInit(fastKalman_t *filter, float q, float r, float p);
     float fastKalmanUpdate(fastKalman_t *filter, float input);
 */
-/*
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 {
     // No point in running this if we cannot derive accurate data
@@ -240,7 +240,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 
         if (!fkfInit) {
             // TODO:  Tune these values
-            fastKalmanInit(&fkf, 20.0, 0.2, 0);
+            fastKalmanInit(&fkf, 3, 0.2, 0.1);
             fkfInit = true;
         }
 
@@ -248,7 +248,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
             performBaroCalibrationCycle();
         } else {
             baroAlt = baroCalculateAltitude();
-            DEBUG_SET(DEBUG_RTH, 3, baroAlt);
+
             estimatedAltitude = fastKalmanUpdate(&fkf, baroAlt);
 
             static int32_t lastBaroAlt = 0;
@@ -299,7 +299,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     previousTimeUs = currentTimeUs;
 }
 
-*/
+/*
 
 #if defined(USE_BARO) || defined(USE_RANGEFINDER)
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)
@@ -410,10 +410,18 @@ int32_t getEstimatedVario(void)
 }
 
 void setAltitude(uint16_t targetAltitude) {
+    if (initialThrottleHold == 0) {
+        initialThrottleHold = 1300;
+    }
+
+    AltHold = targetAltitude;
+
+    applyAltHold();
+    /*
     //crude attempt #1, this probably won't work
     static uint16_t control_throttle = 1500;
     if (estimatedAltitude < targetAltitude && control_throttle < 1700) {
          control_throttle += 10;
     } else control_throttle = 1300; //random guess
-    rcCommand[THROTTLE] = control_throttle;
+    rcCommand[THROTTLE] = control_throttle;*/
 }
