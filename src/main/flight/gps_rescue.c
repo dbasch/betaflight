@@ -107,6 +107,7 @@ void updateGPSRescueState(void)
      }
      
      setAltitude(targetAltitude);
+     applyAltHold();
 
     gpsRescueAngle[AI_PITCH] = gpsConfig()->gpsRescueAngle;
 }
