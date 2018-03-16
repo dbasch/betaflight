@@ -63,7 +63,7 @@ enum {
 
 // 40hz update rate (20hz LPF on acc)
 #define BARO_UPDATE_FREQUENCY_40HZ (1000 * 25)
-#define GPS_UPDATE_FREQUENCY_5HZ (1000 * 200000)
+#define GPS_UPDATE_FREQUENCY_5HZ (1000 * 200)
 
 #if defined(USE_ALT_HOLD)
 
