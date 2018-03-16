@@ -117,9 +117,9 @@ void updateGPSRescueState(void)
 
     //this is another hack, version 2
     if (gpsSol.groundSpeed > targetSpeed && (gpsRescueAngle[AI_PITCH] > 0)) {
-        gpsRescueAngle[AI_PITCH] -= 5;
+        gpsRescueAngle[AI_PITCH] --;
     } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < gpsConfig()->gpsRescueAngle) {
-        gpsRescueAngle[AI_PITCH] += 5;
+        gpsRescueAngle[AI_PITCH] ++;
     }
 }
 
