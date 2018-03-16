@@ -429,6 +429,7 @@ static bool imuIsAccelerometerHealthy(void)
 static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
 {
     static timeUs_t previousIMUUpdateTime;
+    static bool hasInitializedGPSHeading = false;
 
     bool useAcc = false;
     bool useMag = false;
@@ -466,6 +467,12 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                 courseOverGround = tiltDirection + DECIDEGREES_TO_RADIANS(gpsSol.groundCourse);
 
                 rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw) - courseOverGround;
+
+                if (!hasInitializedGPSHeading) { // Initially correct the gps heading, we can deal with gradual corrections later
+                    attitude.values.yaw = RADIANS_TO_DECIDEGREES(courseOverGround);
+                    hasInitializedGPSHeading = true;
+                }
+
                 useCOG = true; // Tell the IMU to correct attitude.values.yaw with this data
             } else {
                 rawYawError = 0;
