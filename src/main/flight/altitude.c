@@ -468,11 +468,4 @@ int32_t getEstimatedVario(void)
 
 void setAltitude(uint16_t targetAltitude) {
     AltHold = targetAltitude * 100; //Convert meters to cm
-    /*
-    //crude attempt #1, this probably won't work
-    static uint16_t control_throttle = 1500;
-    if (estimatedAltitude < targetAltitude && control_throttle < 1700) {
-         control_throttle += 10;
-    } else control_throttle = 1300; //random guess
-    rcCommand[THROTTLE] = control_throttle;*/
 }
