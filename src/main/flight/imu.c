@@ -468,7 +468,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
 
                 rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw) - courseOverGround;
 
-                if (!hasInitializedGPSHeading) { // Initially correct the gps heading, we can deal with gradual corrections later
+                if (!hasInitializedGPSHeading && GPS_distanceToHome > 50) { // Initially correct the gps heading, we can deal with gradual corrections later
                     attitude.values.yaw = RADIANS_TO_DECIDEGREES(courseOverGround);
                     hasInitializedGPSHeading = true;
                 }
