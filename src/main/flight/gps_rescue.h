@@ -35,3 +35,4 @@ enum {
  uint16_t final_altitude;
 
 void updateGPSRescueState(void);
+void applyGPSRescueAltitude(void);

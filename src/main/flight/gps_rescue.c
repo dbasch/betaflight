@@ -22,6 +22,9 @@
 #include "common/maths.h"
 
 #include "build/debug.h"
+
+#include "drivers/time.h"
+
 #include "io/gps.h"
 
 #include "fc/runtime_config.h"
@@ -35,11 +38,11 @@
 
 #include "rx/rx.h"
 
+#define FHZ (1000 * 200) // Five Hertz
+
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
-
-// TEMPORARY SETTINGS UNTIL WE BOTHER ADDING REAL ONES
-
+uint32_t      targetAltitude = 0; // Target altitude in meters
 
 /*
  If we have new GPS data, update home heading
@@ -63,18 +66,14 @@ void setBearing(int16_t deg)
 
     dif *= -GET_DIRECTION(rcControlsConfig()->yaw_control_reversed);
 
-    //DEBUG_SET(DEBUG_RTH,3, dif);
-
-   // if (STATE(SMALL_ANGLE)) {
     rcCommand[YAW] -= dif * currentPidProfile->pid[PID_NAVR].P / 20;
-}   //}
+}
+
 /*
     Use the data we have available to set gpsRescueAngles and update internal state
 */
 void updateGPSRescueState(void) 
 {
-
-
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         // Reset the rescue angles to zero!
         gpsRescueAngle[AI_PITCH] = 0;
@@ -96,22 +95,23 @@ void updateGPSRescueState(void)
     if (ABS(rcCommand[YAW]) < 20) {
         setBearing(GPS_directionToHome);
     }
+
     uint8_t safetyMargin = 10; // really we want to get this from actual data
-    uint16_t targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude;
     uint16_t targetSpeed = 2500; // cm per second, should be a parameter
+
+    targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude;
+
      //are we beyond descent_distance? If so, set safe altitude and speed
      if (GPS_distanceToHome < gpsConfig()->gpsRescueDescentDistance) {
           //this is a hack - linear descent and slowdown
           targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude * GPS_distanceToHome / gpsConfig()->gpsRescueDescentDistance;
           targetSpeed = constrain(targetSpeed * GPS_distanceToHome / gpsConfig()->gpsRescueDescentDistance, 100, 2500);
      }
+
      DEBUG_SET(DEBUG_RTH, 0, gpsSol.groundSpeed);
      DEBUG_SET(DEBUG_RTH,1, targetSpeed);
      DEBUG_SET(DEBUG_RTH,2, gpsRescueAngle[AI_PITCH]);
      DEBUG_SET(DEBUG_RTH,3, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
-
-     setAltitude(targetAltitude);
-     applyAltHold();
     //this is a hack
     //gpsRescueAngle[AI_PITCH] = gpsConfig()->gpsRescueAngle;
 
@@ -121,6 +121,54 @@ void updateGPSRescueState(void)
     } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < gpsConfig()->gpsRescueAngle) {
         gpsRescueAngle[AI_PITCH] ++;
     }
+
+    applyGPSRescueAltitude();
 }
 
+void applyGPSRescueAltitude()
+{
+    static uint32_t previousTimeUs = 0;
+    static uint32_t previousAltitude = 0; // Altitude in cm
+    static int8_t netDirection = 0; // -5 to 5 for direction in the span of a second
 
+    const uint32_t currentTimeUs = micros();
+    const uint32_t dTime = currentTimeUs - previousTimeUs;
+
+    if (dTime < FHZ) { // Only apply altitude correction at 5hz (lowest common denominator with sensors)
+        return;
+    }
+
+    const uint32_t currentAltitude = gpsSol.llh.alt;
+
+    // Increment or decrement at 5hz, this will function as our integral error over time
+
+    if(ABS(currentAltitude - targetAltitude) < 100) { // If we are within 1m of target altitude, KISS
+        return;
+    }
+
+    if (currentAltitude > previousAltitude) {
+        netDirection = constrain(netDirection + 1, -10, 10);
+    } else if(currentAltitude < previousAltitude) { 
+        netDirection = constrain(netDirection - 1, -10, 10);
+    }
+
+    // Dont keep changing throttle once it is already moving towards the height we want
+    if ((netDirection == 10 && currentAltitude < targetAltitude) || (netDirection == -10 && currentAltitude > targetAltitude)) {
+        return;
+    }
+
+    uint32_t correctionFactor = scaleRange(ABS(netDirection), 0, 10, 0, 100);
+    uint32_t throttleCorrection = 0;
+
+    //int scaleRange(int x, int srcFrom, int srcTo, int destFrom, int destTo) {
+    if (currentAltitude < targetAltitude) {
+        throttleCorrection += 100 - correctionFactor;
+    } else if(currentAltitude > targetAltitude) {
+        throttleCorrection -= 100 - correctionFactor;
+    }
+
+    rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] + throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
+
+    previousAltitude = currentAltitude;
+    previousTimeUs = currentTimeUs;
+}
