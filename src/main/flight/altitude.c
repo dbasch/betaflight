@@ -121,7 +121,7 @@ static void applyMultirotorAltHold(void)
 
     rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX);
 
-    DEBUG_SET(DEBUG_RTH, 3, rcCommand[THROTTLE]);
+    DEBUG_SET(DEBUG_ALTITUDE, 3, rcCommand[THROTTLE]);
 }
 
 static void applyFixedWingAltHold(void)
@@ -198,7 +198,7 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
         error = constrain(AltHold - estimatedAltitude, -500, 500);
         error = applyDeadband(error, 10); // remove small P parameter to reduce noise near zero position
 
-        DEBUG_SET(DEBUG_RTH, 1, error);
+        DEBUG_SET(DEBUG_ALTITUDE, 1, error);
 
         setVel = constrain((currentPidProfile->pid[PID_ALT].P * error / 128), -300, +300); // limit velocity to +/- 3 m/s
     } else {
@@ -218,7 +218,7 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     // D
     result -= constrain(currentPidProfile->pid[PID_VEL].D * (accZ_tmp + accZ_old) / 512, -150, 150);
 
-    DEBUG_SET(DEBUG_RTH, 2, result);
+    DEBUG_SET(DEBUG_ALTITUDE, 2, result);
 
     return result;
 }
