@@ -73,8 +73,7 @@ void setBearing(int16_t deg)
 */
 void updateGPSRescueState(void) 
 {
-    //DEBUG_SET(DEBUG_RTH,1, GPS_directionToHome);
-    //DEBUG_SET(DEBUG_RTH,2, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
+
 
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         // Reset the rescue angles to zero!
@@ -99,14 +98,17 @@ void updateGPSRescueState(void)
     }
     uint8_t safetyMargin = 10; // really we want to get this from actual data
     uint16_t targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude;
-    uint16_t targetSpeed = 25; // meters per second, should be a parameter
+    uint16_t targetSpeed = 2500; // cm per second, should be a parameter
      //are we beyond descent_distance? If so, set safe altitude and speed
      if (GPS_distanceToHome < gpsConfig()->gpsRescueDescentDistance) {
           //this is a hack - linear descent and slowdown
           targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude * GPS_distanceToHome / gpsConfig()->gpsRescueDescentDistance;
-          targetSpeed = constrain(targetSpeed * GPS_distanceToHome / gpsConfig()->gpsRescueDescentDistance, 5, 100);
+          targetSpeed = constrain(targetSpeed * GPS_distanceToHome / gpsConfig()->gpsRescueDescentDistance, 100, 2500);
      }
-     DEBUG_SET(DEBUG_RTH, 0, targetAltitude);
+     DEBUG_SET(DEBUG_RTH, 0, gpsSol.groundSpeed);
+     DEBUG_SET(DEBUG_RTH,1, targetSpeed);
+     DEBUG_SET(DEBUG_RTH,2, gpsRescueAngle[AI_PITCH]);
+     DEBUG_SET(DEBUG_RTH,3, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
 
      setAltitude(targetAltitude);
      applyAltHold();
@@ -114,7 +116,7 @@ void updateGPSRescueState(void)
     //gpsRescueAngle[AI_PITCH] = gpsConfig()->gpsRescueAngle;
 
     //this is another hack, version 2
-    if (gpsSol.groundSpeed > targetSpeed && gpsRescueAngle[AI_PITCH] > 0) {
+    if (gpsSol.groundSpeed > targetSpeed && (gpsRescueAngle[AI_PITCH] > 0)) {
         gpsRescueAngle[AI_PITCH] -= 5;
     } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < gpsConfig()->gpsRescueAngle) {
         gpsRescueAngle[AI_PITCH] += 5;
