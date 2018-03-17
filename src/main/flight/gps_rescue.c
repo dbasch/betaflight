@@ -141,6 +141,8 @@ void applyGPSRescueAltitude()
     }
 
     const int32_t currentAltitude = gpsSol.llh.alt;
+    previousAltitude = currentAltitude;
+    previousTimeUs = currentTimeUs;
 
     // Increment or decrement at 5hz, this will function as our integral error over time
 
@@ -174,6 +176,4 @@ void applyGPSRescueAltitude()
     DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
 
 
-    previousAltitude = currentAltitude;
-    previousTimeUs = currentTimeUs;
 }
