@@ -42,7 +42,7 @@
 
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
-uint32_t      targetAltitude = 0; // Target altitude in meters
+int32_t       targetAltitude = 0; // Target altitude in meters
 
 /*
  If we have new GPS data, update home heading
@@ -130,7 +130,7 @@ void updateGPSRescueState(void)
 void applyGPSRescueAltitude()
 {
     static uint32_t previousTimeUs = 0;
-    static uint32_t previousAltitude = 0; // Altitude in cm
+    static int32_t previousAltitude = 0; // Altitude in cm
     static int8_t netDirection = 0; // -10 to 10 for direction in the span of a 2s
 
     const uint32_t currentTimeUs = micros();
@@ -140,7 +140,7 @@ void applyGPSRescueAltitude()
         return;
     }
 
-    const uint32_t currentAltitude = gpsSol.llh.alt;
+    const int32_t currentAltitude = gpsSol.llh.alt;
 
     // Increment or decrement at 5hz, this will function as our integral error over time
 
