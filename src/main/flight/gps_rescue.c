@@ -136,7 +136,7 @@ void applyGPSRescueAltitude()
     const uint32_t currentTimeUs = micros();
     const uint32_t dTime = currentTimeUs - previousTimeUs;
 
-    bool shouldApplyThrottleCorrection = true;
+    bool applyThrottleCorrection = true;
 
     if (dTime < FHZ) { // Only apply altitude correction at 5hz (lowest common denominator with sensors)
         return;
@@ -153,24 +153,18 @@ void applyGPSRescueAltitude()
         netDirection--;
     }
 
-    // If we are within 1m of target altitude, KISS
-    if(ABS(currentAltitude - targetAltitude) < 500) {
-        shouldApplyThrottleCorrection = false;
-    }
+    //conditions for applying the throttle correction:
+    //1 - must be at least 5 meters from the targetAltitude
+    //2 - netdirection must not be maxed out in the direction we want to go
+    applyThrottleCorrection = (ABS(currentAltitude - targetAltitude) > 500) &&
+    ((netDirection < 10 && currentAltitude < targetAltitude) ||
+    (netDirection > -10 && currentAltitude > targetAltitude));
 
-    // Dont keep changing throttle once it is already moving towards the height we want
-    if ((netDirection == 10 && currentAltitude < targetAltitude) || (netDirection == -10 && currentAltitude > targetAltitude)) {
-        shouldApplyThrottleCorrection = false;
-    }
 
-    int8_t throttleCorrection = 100 - (ABS(netDirection) * 10);
+    int8_t throttleCorrection = sign(targetAltitude - currentAltitude) * (100 - (ABS(netDirection) * 10));
 
-    if (shouldApplyThrottleCorrection) {
-        if (currentAltitude < targetAltitude) {
+    if (applyThrottleCorrection) {
             rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] + throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
-        } else if(currentAltitude > targetAltitude) {
-            rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] - throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
-        }
     }
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, netDirection);
