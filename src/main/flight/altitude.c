@@ -230,6 +230,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     static timeUs_t previousTimeUs = 0;
     static fastKalman_t fkf; // For filtering barometer noise
     static bool fkfInit = false; // Prevent double initialization
+    static int32_t altOffsetCm = 0; // So we can set our on the ground position as zero
 
     const uint32_t dTime = currentTimeUs - previousTimeUs;
 
@@ -251,7 +252,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
         if (!isBaroCalibrationComplete()) {
             performBaroCalibrationCycle();
         } else {
-            estimatedAltitude = fastKalmanUpdate(&fkf, baroCalculateAltitude());
+            estimatedAltitude = fastKalmanUpdate(&fkf, baroCalculateAltitude()) - altOffsetCm;
         }
     } else if(sensors(SENSOR_GPS)) {
         if (dTime < GPS_UPDATE_FREQUENCY_5HZ) {
@@ -264,7 +265,12 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
             fkfInit = true;
         }
 
-        estimatedAltitude = fastKalmanUpdate(&fkf, gpsSol.llh.alt);
+        estimatedAltitude = fastKalmanUpdate(&fkf, gpsSol.llh.alt) - altOffsetCm;
+    }
+
+    // If we are not armed yet and our estimated altitude is not zero, this is an offset we can use
+    if (estimatedAltitude != 0 && !ARMING_FLAG(ARMED)) {
+        altOffsetCm = estimatedAltitude;
     }
 
     previousTimeUs = currentTimeUs;
