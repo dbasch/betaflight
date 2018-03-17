@@ -142,7 +142,7 @@ void applyGPSRescueAltitude()
         return;
     }
 
-    const int32_t currentAltitude = gpsSol.llh.alt;
+    const int32_t currentAltitude = getEstimatedAltitude(); // We can ref this directly later
 
     previousTimeUs = currentTimeUs;
 
@@ -159,7 +159,6 @@ void applyGPSRescueAltitude()
     applyThrottleCorrection = (ABS(currentAltitude - targetAltitude) > 500) &&
     ((netDirection < 10 && currentAltitude < targetAltitude) ||
     (netDirection > -10 && currentAltitude > targetAltitude));
-
 
     int8_t throttleCorrection = sign(targetAltitude - currentAltitude) * (100 - (ABS(netDirection) * 10));
 
