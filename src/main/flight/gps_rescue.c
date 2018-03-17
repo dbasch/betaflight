@@ -123,7 +123,7 @@ void updateGPSRescueState(void)
         gpsRescueAngle[AI_PITCH] ++;
     }*/
 
-    targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude;
+    targetAltitude = 10 + gpsConfig()->gpsRescueInitialAltitude;
     applyGPSRescueAltitude();
 }
 

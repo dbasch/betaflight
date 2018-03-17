@@ -224,11 +224,52 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
 }
 #endif // USE_ALT_HOLD
 
+
+void calculateEstimatedAltitude(timeUs_t currentTimeUs)
+{
+    static timeUs_t previousTimeUs = 0;
+    static fastKalman_t fkf; // For filtering barometer noise
+    static bool fkfInit = false; // Prevent double initialization
+
+    const uint32_t dTime = currentTimeUs - previousTimeUs;
+
+    if ((!sensors(SENSOR_BARO) && !sensors(SENSOR_GPS)) || !sensors(SENSOR_ACC)) {
+        return;
+    }
+
+    if(sensors(SENSOR_BARO)) {
+        if (dTime < BARO_UPDATE_FREQUENCY_40HZ) {
+            return;
+        }
+
+        if (!fkfInit) {
+            // TODO:  Tune these values
+            fastKalmanInit(&fkf, 3, 0.2, 0.1);
+            fkfInit = true;
+        }
+
+        if (!isBaroCalibrationComplete()) {
+            performBaroCalibrationCycle();
+        } else {
+            estimatedAltitude = fastKalmanUpdate(&fkf, baroCalculateAltitude());
+        }
+    } else if(sensors(SENSOR_GPS)) {
+        if (dTime < GPS_UPDATE_FREQUENCY_5HZ) {
+            return;
+        }
+
+        if (!fkfInit) {
+            // TODO:  Tune these values
+            fastKalmanInit(&fkf, 3, 0.2, 0.1);
+            fkfInit = true;
+        }
+
+        estimatedAltitude = fastKalmanUpdate(&fkf, gpsSol.llh.alt);
+    }
+
+    previousTimeUs = currentTimeUs;
+}
 /*
-    Attempt to use a KF for smoothing barometer out
-    void fastKalmanInit(fastKalman_t *filter, float q, float r, float p);
-    float fastKalmanUpdate(fastKalman_t *filter, float input);
-*/
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 {
     // No point in running this if we cannot derive accurate data
@@ -354,7 +395,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 
 
     previousTimeUs = currentTimeUs;
-}
+}*/
 
 /*
 
