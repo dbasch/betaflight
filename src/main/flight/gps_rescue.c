@@ -136,41 +136,41 @@ void applyGPSRescueAltitude()
     const uint32_t currentTimeUs = micros();
     const uint32_t dTime = currentTimeUs - previousTimeUs;
 
+    bool shouldApplyThrottleCorrection = true;
+
     if (dTime < FHZ) { // Only apply altitude correction at 5hz (lowest common denominator with sensors)
         return;
     }
 
     const int32_t currentAltitude = gpsSol.llh.alt;
+
     previousTimeUs = currentTimeUs;
 
     // Increment or decrement at 5hz, this will function as our integral error over time
-
-    if(ABS(currentAltitude - targetAltitude) < 500) { // If we are within 1m of target altitude, KISS
-        previousAltitude = currentAltitude;
-        return;
-    }
-
     if (currentAltitude > previousAltitude && netDirection < 10) {
         netDirection++;
     } else if(currentAltitude < previousAltitude && netDirection > -10) {
         netDirection--;
     }
 
-    // Dont keep changing throttle once it is already moving towards the height we want
-    if ((netDirection == 10 && currentAltitude < targetAltitude) || (netDirection == -10 && currentAltitude > targetAltitude)) {
-        previousAltitude = currentAltitude;
-        return;
+    // If we are within 1m of target altitude, KISS
+    if(ABS(currentAltitude - targetAltitude) < 500) {
+        shouldApplyThrottleCorrection = false;
     }
 
-     previousAltitude = currentAltitude;
+    // Dont keep changing throttle once it is already moving towards the height we want
+    if ((netDirection == 10 && currentAltitude < targetAltitude) || (netDirection == -10 && currentAltitude > targetAltitude)) {
+        shouldApplyThrottleCorrection = false;
+    }
 
     int8_t throttleCorrection = 100 - (ABS(netDirection) * 10);
 
-    //int scaleRange(int x, int srcFrom, int srcTo, int destFrom, int destTo) {
-    if (currentAltitude < targetAltitude) {
-        rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] + throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
-    } else if(currentAltitude > targetAltitude) {
-        rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] - throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
+    if (shouldApplyThrottleCorrection) {
+        if (currentAltitude < targetAltitude) {
+            rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] + throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
+        } else if(currentAltitude > targetAltitude) {
+            rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] - throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
+        }
     }
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, netDirection);
@@ -178,5 +178,5 @@ void applyGPSRescueAltitude()
     DEBUG_SET(DEBUG_ALTITUDE, 2, rcCommand[THROTTLE]);
     DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
 
-
+    previousAltitude = currentAltitude;
 }
