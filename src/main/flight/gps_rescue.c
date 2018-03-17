@@ -42,7 +42,7 @@
 
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
-int32_t       targetAltitude = 0; // Target altitude in meters
+int32_t       targetAltitude = 0; // Target altitude in cm
 
 /*
  If we have new GPS data, update home heading
@@ -123,7 +123,7 @@ void updateGPSRescueState(void)
         gpsRescueAngle[AI_PITCH] ++;
     }*/
 
-    targetAltitude = 10 + gpsConfig()->gpsRescueInitialAltitude;
+    targetAltitude = (10 + gpsConfig()->gpsRescueInitialAltitude) * 100 ;
     applyGPSRescueAltitude();
 }
 
@@ -144,7 +144,7 @@ void applyGPSRescueAltitude()
 
     // Increment or decrement at 5hz, this will function as our integral error over time
 
-    if(ABS(currentAltitude - targetAltitude) < 100) { // If we are within 1m of target altitude, KISS
+    if(ABS(currentAltitude - targetAltitude) < 500) { // If we are within 1m of target altitude, KISS
         return;
     }
 
@@ -159,17 +159,14 @@ void applyGPSRescueAltitude()
         return;
     }
 
-    int8_t correctionFactor = ABS(netDirection) * 10;
-    int8_t throttleCorrection = 0;
+    int8_t throttleCorrection = 100 - (ABS(netDirection) * 10);
 
     //int scaleRange(int x, int srcFrom, int srcTo, int destFrom, int destTo) {
     if (currentAltitude < targetAltitude) {
-        throttleCorrection += 100 - correctionFactor;
+        rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] + throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
     } else if(currentAltitude > targetAltitude) {
-        throttleCorrection -= 100 - correctionFactor;
+        rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] - throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
     }
-
-    rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] + throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, netDirection);
     DEBUG_SET(DEBUG_ALTITUDE, 1, throttleCorrection);
