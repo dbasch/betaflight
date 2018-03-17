@@ -159,7 +159,7 @@ void applyGPSRescueAltitude()
         return;
     }
 
-    int8_t correctionFactor = scaleRange(ABS(netDirection), 0, 10, 0, 100);
+    int8_t correctionFactor = ABS(netDirection) * 10;
     int8_t throttleCorrection = 0;
 
     //int scaleRange(int x, int srcFrom, int srcTo, int destFrom, int destTo) {
