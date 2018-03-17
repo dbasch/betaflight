@@ -141,12 +141,12 @@ void applyGPSRescueAltitude()
     }
 
     const int32_t currentAltitude = gpsSol.llh.alt;
-    previousAltitude = currentAltitude;
     previousTimeUs = currentTimeUs;
 
     // Increment or decrement at 5hz, this will function as our integral error over time
 
     if(ABS(currentAltitude - targetAltitude) < 500) { // If we are within 1m of target altitude, KISS
+        previousAltitude = currentAltitude;
         return;
     }
 
@@ -158,8 +158,11 @@ void applyGPSRescueAltitude()
 
     // Dont keep changing throttle once it is already moving towards the height we want
     if ((netDirection == 10 && currentAltitude < targetAltitude) || (netDirection == -10 && currentAltitude > targetAltitude)) {
+        previousAltitude = currentAltitude;
         return;
     }
+
+     previousAltitude = currentAltitude;
 
     int8_t throttleCorrection = 100 - (ABS(netDirection) * 10);
 
