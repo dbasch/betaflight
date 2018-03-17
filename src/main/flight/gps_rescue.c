@@ -92,6 +92,7 @@ void updateGPSRescueState(void)
 
 
 
+    /*
     if (ABS(rcCommand[YAW]) < 20) {
         setBearing(GPS_directionToHome);
     }
@@ -120,8 +121,9 @@ void updateGPSRescueState(void)
         gpsRescueAngle[AI_PITCH] --;
     } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < gpsConfig()->gpsRescueAngle) {
         gpsRescueAngle[AI_PITCH] ++;
-    }
+    }*/
 
+    targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude;
     applyGPSRescueAltitude();
 }
 
@@ -129,7 +131,7 @@ void applyGPSRescueAltitude()
 {
     static uint32_t previousTimeUs = 0;
     static uint32_t previousAltitude = 0; // Altitude in cm
-    static int8_t netDirection = 0; // -5 to 5 for direction in the span of a second
+    static int8_t netDirection = 0; // -10 to 10 for direction in the span of a 2s
 
     const uint32_t currentTimeUs = micros();
     const uint32_t dTime = currentTimeUs - previousTimeUs;
@@ -157,8 +159,8 @@ void applyGPSRescueAltitude()
         return;
     }
 
-    uint32_t correctionFactor = scaleRange(ABS(netDirection), 0, 10, 0, 100);
-    uint32_t throttleCorrection = 0;
+    int8_t correctionFactor = scaleRange(ABS(netDirection), 0, 10, 0, 100);
+    int8_t throttleCorrection = 0;
 
     //int scaleRange(int x, int srcFrom, int srcTo, int destFrom, int destTo) {
     if (currentAltitude < targetAltitude) {
@@ -168,6 +170,10 @@ void applyGPSRescueAltitude()
     }
 
     rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] + throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
+
+    DEBUG_SET(DEBUG_ALTITUDE, 0, netDirection);
+    DEBUG_SET(DEBUG_ALTITUDE, 1, throttleCorrection);
+    DEBUG_SET(DEBUG_ALTITUDE, 2, rcCommand[THROTTLE]);
 
     previousAltitude = currentAltitude;
     previousTimeUs = currentTimeUs;
