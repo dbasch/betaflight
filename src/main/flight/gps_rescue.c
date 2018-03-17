@@ -92,15 +92,15 @@ void updateGPSRescueState(void)
 
 
 
-    /*
+
     if (ABS(rcCommand[YAW]) < 20) {
         setBearing(GPS_directionToHome);
     }
 
-    uint8_t safetyMargin = 10; // really we want to get this from actual data
+    uint16_t safetyMargin = 1000; // really we want to get this from actual data
     uint16_t targetSpeed = 2500; // cm per second, should be a parameter
 
-    targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude;
+    targetAltitude = safetyMargin + 100 * gpsConfig()->gpsRescueInitialAltitude;
 
      //are we beyond descent_distance? If so, set safe altitude and speed
      if (GPS_distanceToHome < gpsConfig()->gpsRescueDescentDistance) {
@@ -121,9 +121,9 @@ void updateGPSRescueState(void)
         gpsRescueAngle[AI_PITCH] --;
     } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < gpsConfig()->gpsRescueAngle) {
         gpsRescueAngle[AI_PITCH] ++;
-    }*/
+    }
 
-    targetAltitude = (10 + gpsConfig()->gpsRescueInitialAltitude) * 100 ;
+    targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude * 100 ;
     applyGPSRescueAltitude();
 }
 
@@ -148,10 +148,10 @@ void applyGPSRescueAltitude()
         return;
     }
 
-    if (currentAltitude > previousAltitude) {
-        netDirection = constrain(netDirection + 1, -10, 10);
-    } else if(currentAltitude < previousAltitude) { 
-        netDirection = constrain(netDirection - 1, -10, 10);
+    if (currentAltitude > previousAltitude && netDirection < 10) {
+        netDirection++;
+    } else if(currentAltitude < previousAltitude && netDirection > -10) {
+        netDirection--;
     }
 
     // Dont keep changing throttle once it is already moving towards the height we want
@@ -171,6 +171,8 @@ void applyGPSRescueAltitude()
     DEBUG_SET(DEBUG_ALTITUDE, 0, netDirection);
     DEBUG_SET(DEBUG_ALTITUDE, 1, throttleCorrection);
     DEBUG_SET(DEBUG_ALTITUDE, 2, rcCommand[THROTTLE]);
+    DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
+
 
     previousAltitude = currentAltitude;
     previousTimeUs = currentTimeUs;
