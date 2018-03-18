@@ -130,7 +130,9 @@ void applyGPSRescueAltitude()
 {
     static uint32_t previousTimeUs = 0;
     static int32_t previousAltitude = 0; // Altitude in cm
-    static int8_t netDirection = 0; // -10 to 10 for direction in the span of a 2s
+    static int8_t netDirection = 0; // movement over time
+    static int8_t iTermMax = 5; // I term max for netDirection, maybe make this a configuration item later
+    static int16_t previousRescueAngle = 0;
 
     const uint32_t currentTimeUs = micros();
     const uint32_t dTime = currentTimeUs - previousTimeUs;
@@ -144,10 +146,7 @@ void applyGPSRescueAltitude()
     previousTimeUs = currentTimeUs;
 
     // Increment or decrement at 5hz, this will function as our integral error over time (5 samples @ 200ms = 1s)
-    netDirection = constrain(netDirection + sign(currentAltitude - previousAltitude), -5, 5);
-
-    //ust be at least 3 meters from the targetAltitude to bother applying a correction
-    bool applyThrottleCorrection = (ABS(currentAltitude - targetAltitude) > 300);
+    netDirection = constrain(netDirection + sign(currentAltitude - previousAltitude), -1 * iTermMax, itermMax);
 
     int8_t correctionMagnitude = ABS(netDirection) * gpsConfig()->gpsRescueThrottleGain;
 
@@ -156,9 +155,9 @@ void applyGPSRescueAltitude()
     }
 
     int8_t throttleCorrection = sign(targetAltitude - currentAltitude) * correctionMagnitude;
-    if (applyThrottleCorrection) {
-           rescueThrottle = constrain(rcCommand[THROTTLE] + throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
-    }
+    float efficiencyGain = 1 + (cos(DECIDEGREES_TO_RADIANS(previousRescueAngle)) - cos(DECIDEGREES_TO_RADIANS(gpsRescueAngle[AI_PITCH])));
+    
+    rescueThrottle = constrain((rcCommand[THROTTLE] + throttleCorrection) * efficiencyGain, PWM_RANGE_MIN, PWM_RANGE_MAX);
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, netDirection);
     DEBUG_SET(DEBUG_ALTITUDE, 1, throttleCorrection);
@@ -166,6 +165,7 @@ void applyGPSRescueAltitude()
     DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
 
     previousAltitude = currentAltitude;
+    previousRescueAngle = gpsRescueAngle[AI_PITCH];
 }
 
 
