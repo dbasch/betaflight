@@ -105,16 +105,16 @@ void updateGPSRescueState(void)
      //are we beyond descent_distance? If so, set safe altitude and speed
      if (GPS_distanceToHome < gpsConfig()->gpsRescueDescentDistance) {
           //this is a hack - linear descent and slowdown
-          targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude * GPS_distanceToHome / gpsConfig()->gpsRescueDescentDistance;
+          targetAltitude = safetyMargin + 100 * gpsConfig()->gpsRescueInitialAltitude * GPS_distanceToHome / gpsConfig()->gpsRescueDescentDistance;
+          DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
+
           targetSpeed = constrain(targetSpeed * GPS_distanceToHome / gpsConfig()->gpsRescueDescentDistance, 100, 2500);
      }
 
-     DEBUG_SET(DEBUG_RTH, 0, gpsSol.groundSpeed);
-     DEBUG_SET(DEBUG_RTH,1, targetSpeed);
-     DEBUG_SET(DEBUG_RTH,2, gpsRescueAngle[AI_PITCH]);
-     DEBUG_SET(DEBUG_RTH,3, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
-    //this is a hack
-    //gpsRescueAngle[AI_PITCH] = gpsConfig()->gpsRescueAngle;
+     //DEBUG_SET(DEBUG_RTH, 0, gpsSol.groundSpeed);
+     //DEBUG_SET(DEBUG_RTH,1, targetSpeed);
+     //DEBUG_SET(DEBUG_RTH,2, gpsRescueAngle[AI_PITCH]);
+     //DEBUG_SET(DEBUG_RTH,3, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
 
     //this is another hack, version 2
     if (gpsSol.groundSpeed > targetSpeed && (gpsRescueAngle[AI_PITCH] > 0)) {
@@ -122,8 +122,6 @@ void updateGPSRescueState(void)
     } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < gpsConfig()->gpsRescueAngle) {
         gpsRescueAngle[AI_PITCH] ++;
     }
-
-    targetAltitude = safetyMargin + gpsConfig()->gpsRescueInitialAltitude * 100 ;
     applyGPSRescueAltitude();
 }
 
@@ -156,15 +154,21 @@ void applyGPSRescueAltitude()
     //conditions for applying the throttle correction:
     //1 - must be at least 5 meters from the targetAltitude
     //2 - netdirection must not be maxed out in the direction we want to go
-    applyThrottleCorrection = (ABS(currentAltitude - targetAltitude) > 500) &&
-    ((netDirection < 10 && currentAltitude < targetAltitude) ||
-    (netDirection > -10 && currentAltitude > targetAltitude));
+     applyThrottleCorrection = (ABS(currentAltitude - targetAltitude) < 500);
+     int8_t correctionMagnitude = ABS(netDirection) * 10;
 
-    int8_t throttleCorrection = sign(targetAltitude - currentAltitude) * (100 - (ABS(netDirection) * 10));
+     bool movingTowardsTarget =
+         (netDirection > 0 && currentAltitude < targetAltitude) ||
+         (netDirection < 0 && currentAltitude > targetAltitude);
 
-    if (applyThrottleCorrection) {
-            rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] + throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
+    if (movingTowardsTarget) {
+        correctionMagnitude = 100 - correctionMagnitude;
     }
+
+     int8_t throttleCorrection = (sign(targetAltitude - currentAltitude)) * correctionMagnitude;
+     if (applyThrottleCorrection) {
+            rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] + throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
+     }
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, netDirection);
     DEBUG_SET(DEBUG_ALTITUDE, 1, throttleCorrection);
@@ -173,3 +177,6 @@ void applyGPSRescueAltitude()
 
     previousAltitude = currentAltitude;
 }
+
+
+
