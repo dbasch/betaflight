@@ -146,7 +146,7 @@ void applyGPSRescueAltitude()
     previousTimeUs = currentTimeUs;
 
     // Increment or decrement at 5hz, this will function as our integral error over time (5 samples @ 200ms = 1s)
-    netDirection = constrain(netDirection + sign(currentAltitude - previousAltitude), -1 * iTermMax, itermMax);
+    netDirection = constrain(netDirection + sign(currentAltitude - previousAltitude), -1 * iTermMax, iTermMax);
 
     int8_t correctionMagnitude = ABS(netDirection) * gpsConfig()->gpsRescueThrottleGain;
 
@@ -157,7 +157,7 @@ void applyGPSRescueAltitude()
     int8_t throttleCorrection = sign(targetAltitude - currentAltitude) * correctionMagnitude;
     float efficiencyGain = 1 + (cos(DECIDEGREES_TO_RADIANS(previousRescueAngle)) - cos(DECIDEGREES_TO_RADIANS(gpsRescueAngle[AI_PITCH])));
     
-    rescueThrottle = constrain((rcCommand[THROTTLE] + throttleCorrection) * efficiencyGain, PWM_RANGE_MIN, PWM_RANGE_MAX);
+    rescueThrottle = constrain((rcCommand[THROTTLE] + throttleCorrection) * efficiencyGain, PWM_RANGE_MIN + 200, PWM_RANGE_MAX -200);
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, netDirection);
     DEBUG_SET(DEBUG_ALTITUDE, 1, throttleCorrection);
