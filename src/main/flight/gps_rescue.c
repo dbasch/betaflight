@@ -143,11 +143,12 @@ void applyGPSRescueAltitude()
 
     previousTimeUs = currentTimeUs;
 
-    // Increment or decrement at 5hz, this will function as our integral error over time
-    netDirection = constrain(netDirection + sign(currentAltitude - previousAltitude), -10, 10);
+    // Increment or decrement at 5hz, this will function as our integral error over time (5 samples @ 200ms = 1s)
+    netDirection = constrain(netDirection + sign(currentAltitude - previousAltitude), -5, 5);
 
     //ust be at least 3 meters from the targetAltitude to bother applying a correction
     bool applyThrottleCorrection = (ABS(currentAltitude - targetAltitude) > 300);
+
     int8_t correctionMagnitude = ABS(netDirection) * gpsConfig()->gpsRescueThrottleGain;
 
     if (sign(netDirection) == sign(targetAltitude - currentAltitude)) { //moving towards target
@@ -163,7 +164,6 @@ void applyGPSRescueAltitude()
     DEBUG_SET(DEBUG_ALTITUDE, 1, throttleCorrection);
     DEBUG_SET(DEBUG_ALTITUDE, 2, rescueThrottle);
     DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
-
 
     previousAltitude = currentAltitude;
 }
