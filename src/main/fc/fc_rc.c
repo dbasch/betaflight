@@ -40,6 +40,7 @@
 #include "flight/failsafe.h"
 #include "flight/imu.h"
 #include "flight/pid.h"
+#include "flight/gps_rescue.h"
 #include "rx/rx.h"
 
 #include "scheduler/scheduler.h"
@@ -358,6 +359,9 @@ void updateRcCommands(void)
         if ((!FLIGHT_MODE(ANGLE_MODE)&&(!FLIGHT_MODE(HORIZON_MODE)) && (!FLIGHT_MODE(GPS_RESCUE_MODE)))) {
             rcCommand[YAW] = rcCommandBuff.Z;
         }
+    }
+    if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
+        rcCommand[THROTTLE] = rescueThrottle;
     }
 }
 

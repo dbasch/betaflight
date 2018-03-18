@@ -20,6 +20,7 @@
 gpsLocation_t home;
 uint16_t      distanceToHome;        // distance to home point in meters
 int16_t       directionToHome;
+uint16_t      rescueThrottle;
 
 extern bool canUseGPSHeading;
 extern int16_t gpsRescueAngle[ANGLE_INDEX_COUNT];

@@ -79,6 +79,7 @@ void updateGPSRescueState(void)
         gpsRescueAngle[AI_PITCH] = 0;
         gpsRescueAngle[AI_ROLL] = 0;
         canUseGPSHeading = true;
+        rescueThrottle = rcCommand[THROTTLE];
 
         return;
     }
@@ -165,9 +166,9 @@ void applyGPSRescueAltitude()
         correctionMagnitude = 100 - correctionMagnitude;
     }
 
-     int8_t throttleCorrection = (sign(targetAltitude - currentAltitude)) * correctionMagnitude;
+     int8_t throttleCorrection = sign(targetAltitude - currentAltitude) * correctionMagnitude;
      if (applyThrottleCorrection) {
-            rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] + throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
+            rescueThrottle = constrain(rcCommand[THROTTLE] + throttleCorrection, PWM_RANGE_MIN, PWM_RANGE_MAX);
      }
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, netDirection);
