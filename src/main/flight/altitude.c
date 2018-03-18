@@ -82,48 +82,6 @@ static int16_t initialThrottleHold = 0;
 
 #define DEGREES_80_IN_DECIDEGREES 800
 
-static void applyMultirotorAltHold(void)
-{
-    /*
-    static uint8_t isAltHoldChanged = 0;
-    // multirotor alt hold
-    if (rcControlsConfig()->alt_hold_fast_change) {
-        // rapid alt changes
-        if (ABS(rcData[THROTTLE] - initialThrottleHold) > rcControlsConfig()->alt_hold_deadband) {
-            errorVelocityI = 0;
-            isAltHoldChanged = 1;
-            rcCommand[THROTTLE] += (rcData[THROTTLE] > initialThrottleHold) ? -rcControlsConfig()->alt_hold_deadband : rcControlsConfig()->alt_hold_deadband;
-        } else {
-            if (isAltHoldChanged) {
-                AltHold = estimatedAltitude;
-                isAltHoldChanged = 0;
-            }
-            rcCommand[THROTTLE] = constrain(initialThrottleHold + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX);
-
-            DEBUG_SET(DEBUG_RTH, 3, constrain(initialThrottleHold + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX));
-        }
-    } else {
-        // slow alt changes, mostly used for aerial photography
-        if (ABS(rcData[THROTTLE] - initialThrottleHold) > rcControlsConfig()->alt_hold_deadband) {
-            // set velocity proportional to stick movement +100 throttle gives ~ +50 cm/s
-            setVelocity = (rcData[THROTTLE] - initialThrottleHold) / 2;
-            velocityControl = 1;
-            isAltHoldChanged = 1;
-        } else if (isAltHoldChanged) {
-            AltHold = estimatedAltitude;
-            velocityControl = 0;
-            isAltHoldChanged = 0;
-        }
-        rcCommand[THROTTLE] = constrain(initialThrottleHold + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX);
-
-        DEBUG_SET(DEBUG_RTH, 3, constrain(initialThrottleHold + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX));
-    }*/
-
-    rcCommand[THROTTLE] = constrain(rcCommand[THROTTLE] + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX);
-
-    DEBUG_SET(DEBUG_ALTITUDE, 3, rcCommand[THROTTLE]);
-}
-
 static void applyFixedWingAltHold(void)
 {
     // handle fixedwing-related althold. UNTESTED! and probably wrong
@@ -137,9 +95,7 @@ void applyAltHold(void)
 {
     if (STATE(FIXED_WING)) {
         applyFixedWingAltHold();
-    } else {
-        applyMultirotorAltHold();
-    }
+    } // else multirotoralthold
 }
 
 void updateAltHoldState(void)
@@ -198,7 +154,7 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
         error = constrain(AltHold - estimatedAltitude, -500, 500);
         error = applyDeadband(error, 10); // remove small P parameter to reduce noise near zero position
 
-        DEBUG_SET(DEBUG_ALTITUDE, 1, error);
+        //DEBUG_SET(DEBUG_ALTITUDE, 1, error);
 
         setVel = constrain((currentPidProfile->pid[PID_ALT].P * error / 128), -300, +300); // limit velocity to +/- 3 m/s
     } else {
@@ -218,7 +174,7 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     // D
     result -= constrain(currentPidProfile->pid[PID_VEL].D * (accZ_tmp + accZ_old) / 512, -150, 150);
 
-    DEBUG_SET(DEBUG_ALTITUDE, 2, result);
+    //DEBUG_SET(DEBUG_ALTITUDE, 2, result);
 
     return result;
 }
@@ -227,52 +183,17 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
 
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 {
+
     static timeUs_t previousTimeUs = 0;
-    static fastKalman_t fkf; // For filtering barometer noise
-    static bool fkfInit = false; // Prevent double initialization
-    static int32_t altOffsetCm = 0; // So we can set our on the ground position as zero
 
     const uint32_t dTime = currentTimeUs - previousTimeUs;
 
-    if ((!sensors(SENSOR_BARO) && !sensors(SENSOR_GPS)) || !sensors(SENSOR_ACC)) {
-        return;
+    if(sensors(SENSOR_GPS)) {
+            if (dTime < GPS_UPDATE_FREQUENCY_5HZ) {
+                return;
+            }
     }
-
-    if(sensors(SENSOR_BARO)) {
-        if (dTime < BARO_UPDATE_FREQUENCY_40HZ) {
-            return;
-        }
-
-        if (!fkfInit) {
-            // TODO:  Tune these values
-            fastKalmanInit(&fkf, 3, 0.2, 0.1);
-            fkfInit = true;
-        }
-
-        if (!isBaroCalibrationComplete()) {
-            performBaroCalibrationCycle();
-        } else {
-            estimatedAltitude = fastKalmanUpdate(&fkf, baroCalculateAltitude()) - altOffsetCm;
-        }
-    } else if(sensors(SENSOR_GPS)) {
-        if (dTime < GPS_UPDATE_FREQUENCY_5HZ) {
-            return;
-        }
-
-        if (!fkfInit) {
-            // TODO:  Tune these values
-            fastKalmanInit(&fkf, 3, 0.2, 0.1);
-            fkfInit = true;
-        }
-
-        estimatedAltitude = fastKalmanUpdate(&fkf, gpsSol.llh.alt) - altOffsetCm;
-    }
-
-    // If we are not armed yet and our estimated altitude is not zero, this is an offset we can use
-    if (estimatedAltitude != 0 && !ARMING_FLAG(ARMED)) {
-        altOffsetCm = estimatedAltitude;
-    }
-
+    estimatedAltitude = gpsSol.llh.alt;
     previousTimeUs = currentTimeUs;
 }
 /*
