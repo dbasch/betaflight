@@ -21,7 +21,7 @@
 #define sq(x) ((x)*(x))
 #endif
 #define power3(x) ((x)*(x)*(x))
-#define sign(x) (x > 0) ? 1 : ((x < 0) ? -1 : 0)
+#define sign(x) ((x > 0) ? 1 : ((x < 0) ? -1 : 0))
 
 
 // Undefine this for use libc sinf/cosf. Keep this defined to use fast sin/cos approximations
