@@ -596,6 +596,8 @@ const clivalue_t valueTable[] = {
     { "gps_rescue_angle",           VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_GPS_CONFIG, offsetof(gpsConfig_t, gpsRescueAngle) },
     { "gps_rescue_initial_alt",     VAR_UINT16 | MASTER_VALUE, .config.minmax = { 20, 100 }, PG_GPS_CONFIG, offsetof(gpsConfig_t, gpsRescueInitialAltitude) },
     { "gps_rescue_descent_dist",    VAR_UINT16 | MASTER_VALUE, .config.minmax = { 30, 500 }, PG_GPS_CONFIG, offsetof(gpsConfig_t, gpsRescueDescentDistance) },
+    { "gps_rescue_throttle_gain",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 1, 100 }, PG_GPS_CONFIG, offsetof(gpsConfig_t, gpsRescueThrottleGain) },
+
 
 
 #endif

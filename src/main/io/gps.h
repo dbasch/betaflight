@@ -72,6 +72,7 @@ typedef struct gpsConfig_s {
     uint16_t gpsRescueAngle; //XXX we should break this out into its own config maybe
     uint16_t gpsRescueInitialAltitude; //XXX we should break this out into its own config maybe
     uint16_t gpsRescueDescentDistance;
+    uint16_t gpsRescueThrottleGain;
 
 } gpsConfig_t;
 
