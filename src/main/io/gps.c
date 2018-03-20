@@ -217,6 +217,8 @@ gpsData_t gpsData;
 
 
 PG_REGISTER_WITH_RESET_TEMPLATE(gpsConfig_t, gpsConfig, PG_GPS_CONFIG, 0);
+PG_REGISTER_WITH_RESET_TEMPLATE(gpsRescue_t, gpsRescue, PG_GPS_RESCUE, 0);
+
 
 PG_RESET_TEMPLATE(gpsConfig_t, gpsConfig,
     .provider = GPS_NMEA,
@@ -224,6 +226,16 @@ PG_RESET_TEMPLATE(gpsConfig_t, gpsConfig,
     .autoConfig = GPS_AUTOCONFIG_ON,
     .autoBaud = GPS_AUTOBAUD_OFF
 );
+
+PG_RESET_TEMPLATE(gpsRescue_t, gpsRescue,
+    .angle = 40,
+    .initialAltitude = 50,
+    .descentDistance = 100,
+    .throttleGain = 2,
+    .throttleMin = 1200,
+    .throttleMax = 1800
+);
+
 
 static void shiftPacketLog(void)
 {

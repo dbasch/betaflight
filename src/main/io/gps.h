@@ -69,14 +69,21 @@ typedef struct gpsConfig_s {
     sbasMode_e sbasMode;
     gpsAutoConfig_e autoConfig;
     gpsAutoBaud_e autoBaud;
-    uint16_t gpsRescueAngle; //XXX we should break this out into its own config maybe
-    uint16_t gpsRescueInitialAltitude; //XXX we should break this out into its own config maybe
-    uint16_t gpsRescueDescentDistance;
-    uint16_t gpsRescueThrottleGain;
-
 } gpsConfig_t;
 
 PG_DECLARE(gpsConfig_t, gpsConfig);
+
+typedef struct gpsRescue_s {
+    uint16_t angle;
+    uint16_t initialAltitude;
+    uint16_t descentDistance;
+    uint16_t throttleGain;
+    uint16_t throttleMin;
+    uint16_t throttleMax;
+} gpsRescue_t;
+
+PG_DECLARE(gpsRescue_t, gpsRescue);
+
 
 typedef struct gpsCoordinateDDDMMmmmm_s {
     int16_t dddmm;

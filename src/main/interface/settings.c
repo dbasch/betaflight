@@ -593,10 +593,15 @@ const clivalue_t valueTable[] = {
     { "gps_sbas_mode",              VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_GPS_SBAS_MODE }, PG_GPS_CONFIG, offsetof(gpsConfig_t, sbasMode) },
     { "gps_auto_config",            VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_GPS_CONFIG, offsetof(gpsConfig_t, autoConfig) },
     { "gps_auto_baud",              VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_GPS_CONFIG, offsetof(gpsConfig_t, autoBaud) },
-    { "gps_rescue_angle",           VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_GPS_CONFIG, offsetof(gpsConfig_t, gpsRescueAngle) },
-    { "gps_rescue_initial_alt",     VAR_UINT16 | MASTER_VALUE, .config.minmax = { 20, 100 }, PG_GPS_CONFIG, offsetof(gpsConfig_t, gpsRescueInitialAltitude) },
-    { "gps_rescue_descent_dist",    VAR_UINT16 | MASTER_VALUE, .config.minmax = { 30, 500 }, PG_GPS_CONFIG, offsetof(gpsConfig_t, gpsRescueDescentDistance) },
-    { "gps_rescue_throttle_gain",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 1, 100 }, PG_GPS_CONFIG, offsetof(gpsConfig_t, gpsRescueThrottleGain) },
+
+// PG_GPS_RESCUE
+    { "gps_rescue_angle",           VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, angle) },
+    { "gps_rescue_initial_alt",     VAR_UINT16 | MASTER_VALUE, .config.minmax = { 20, 100 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, initialAltitude) },
+    { "gps_rescue_descent_dist",    VAR_UINT16 | MASTER_VALUE, .config.minmax = { 30, 500 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, descentDistance) },
+    { "gps_rescue_throttle_gain",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 1, 100 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, throttleGain) },
+    { "gps_rescue_throttle_min",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 1000, 2000 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, throttleMin) },
+    { "gps_rescue_throttle_max",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 1000, 2000 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, throttleMax) },
+
 
 
 
