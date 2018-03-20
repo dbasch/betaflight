@@ -158,7 +158,7 @@ void applyGPSRescueAltitude()
     int8_t throttleCorrection = sign(targetAltitude - currentAltitude) * correctionMagnitude;
     float efficiencyGain = 1 + (cos(DECIDEGREES_TO_RADIANS(previousRescueAngle)) - cos(DECIDEGREES_TO_RADIANS(gpsRescueAngle[AI_PITCH])));
     
-    rescueThrottle = constrain((rcCommand[THROTTLE] + throttleCorrection) * efficiencyGain, gpsRescue()->throttleMin, gpsRescue()->throttleMax);
+    rescueThrottle = constrain((rcCommand[THROTTLE] + throttleCorrection) * efficiencyGain, gpsRescue()->hoverThrottle - 30, gpsRescue()->throttleMax);
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, netDirection);
     DEBUG_SET(DEBUG_ALTITUDE, 1, throttleCorrection);

@@ -232,7 +232,7 @@ PG_RESET_TEMPLATE(gpsRescue_t, gpsRescue,
     .initialAltitude = 50,
     .descentDistance = 100,
     .throttleGain = 2,
-    .throttleMin = 1200,
+    .hoverThrottle = 1250,
     .throttleMax = 1800
 );
 
