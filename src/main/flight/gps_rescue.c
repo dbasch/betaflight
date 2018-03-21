@@ -43,6 +43,8 @@
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
 int32_t       targetAltitude = 0; // Target altitude in cm
+bool initialized = false;
+
 /*
  If we have new GPS data, update home heading
  if possible and applicable.
@@ -79,9 +81,20 @@ void updateGPSRescueState(void)
         gpsRescueAngle[AI_ROLL] = 0;
         canUseGPSHeading = true;
         rescueThrottle = rcCommand[THROTTLE];
-         DEBUG_SET(DEBUG_ALTITUDE, 1, rcCommand[THROTTLE]);
-         DEBUG_SET(DEBUG_ALTITUDE, 2, attitude.values.pitch);
-         DEBUG_SET(DEBUG_ALTITUDE, 3, attitude.values.roll);
+        netThrottle = rescueThrottle - hoverThrottle;
+        DEBUG_SET(DEBUG_ALTITUDE, 1, rcCommand[THROTTLE]);
+        DEBUG_SET(DEBUG_ALTITUDE, 2, attitude.values.pitch);
+        DEBUG_SET(DEBUG_ALTITUDE, 3, attitude.values.roll);
+        if (!initialized) {
+        //configuration parameters
+            hoverThrottle = gpsRescue()->hoverThrottle;
+            descentDistance = gpsRescue()->descentDistance;
+            rescueAngle = gpsRescue()->angle;
+            initialAltitude = gpsRescue()->initialAltitude;
+            throttleMax = gpsRescue()-> throttleMax;
+            initialized = true;
+        }
+
         return;
     }
 
@@ -102,15 +115,15 @@ void updateGPSRescueState(void)
     uint16_t safetyMargin = 1000; // really we want to get this from actual data
     uint16_t targetSpeed = 2500; // cm per second, should be a parameter
 
-    targetAltitude = safetyMargin + 100 * gpsRescue()->initialAltitude;
+    targetAltitude = safetyMargin + 100 * initialAltitude;
 
      //are we beyond descent_distance? If so, set safe altitude and speed
-     if (GPS_distanceToHome < gpsRescue()->descentDistance) {
+     if (GPS_distanceToHome < descentDistance) {
           //this is a hack - linear descent and slowdown
-          targetAltitude = safetyMargin + 100 * gpsRescue()->initialAltitude * GPS_distanceToHome / gpsRescue()->descentDistance;
+          targetAltitude = safetyMargin + 100 * initialAltitude * GPS_distanceToHome / descentDistance;
          // DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
 
-          targetSpeed = constrain(targetSpeed * GPS_distanceToHome / gpsRescue()->descentDistance, 100, 2500);
+          targetSpeed = constrain(targetSpeed * GPS_distanceToHome / descentDistance, 100, 2500);
      }
 
      //DEBUG_SET(DEBUG_RTH, 0, gpsSol.groundSpeed);
@@ -120,9 +133,11 @@ void updateGPSRescueState(void)
 
     //this is another hack, version 2
     if (gpsSol.groundSpeed > targetSpeed && (gpsRescueAngle[AI_PITCH] > 0)) {
-        gpsRescueAngle[AI_PITCH] --;
-    } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < gpsRescue()->angle) {
-        gpsRescueAngle[AI_PITCH] ++;
+        rescueThrottle--; //compensate for angle, this is a crude hack because it should be dependent on the cos and netthrottle
+        //gpsRescueAngle[AI_PITCH] --;
+    } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < rescueAngle) {
+        rescueThrottle++;
+        //gpsRescueAngle[AI_PITCH] ++;
     }
     applyGPSRescueAltitude();
 }
@@ -130,10 +145,9 @@ void updateGPSRescueState(void)
 void applyGPSRescueAltitude()
 {
     static uint32_t previousTimeUs = 0;
-    static int32_t previousAltitude = 0; // Altitude in cm
-    static int8_t netDirection = 0; // movement over time
-    static int8_t iTermMax = 5; // I term max for netDirection, maybe make this a configuration item later
-    static int16_t previousRescueAngle = 0;
+    static int32_t integral = 0;
+    static int32_t previousError = 0;
+
 
     const uint32_t currentTimeUs = micros();
     const uint32_t dTime = currentTimeUs - previousTimeUs;
@@ -142,31 +156,26 @@ void applyGPSRescueAltitude()
         return;
     }
 
-    const int32_t currentAltitude = getEstimatedAltitude(); // We can ref this directly later
+    const int32_t currentAltitude = getEstimatedAltitude();
+    const int32_t error = targetAltitude - currentAltitude;
+    const int32_t derivative = error - previousError;
+    integral += error;
 
+    //remember state for the next iteration
+    previousError = error;
     previousTimeUs = currentTimeUs;
 
-    // Increment or decrement at 5hz, this will function as our integral error over time (5 samples @ 200ms = 1s)
-    netDirection = constrain(netDirection + sign(currentAltitude - previousAltitude), -1 * iTermMax, iTermMax);
+    //apply PID to control variable
+    netThrottle = tP * error + tI * integral + tD * derivative;
 
-    int8_t correctionMagnitude = ABS(netDirection) * gpsRescue()->throttleGain;
+    rescueThrottle = constrain((rcCommand[THROTTLE] + netThrottle), hoverThrottle - 30, throttleMax);
 
-    if (sign(netDirection) == sign(targetAltitude - currentAltitude)) { //moving towards target
-        correctionMagnitude = 10 * gpsRescue()->throttleGain - correctionMagnitude;
-    }
-
-    int8_t throttleCorrection = sign(targetAltitude - currentAltitude) * correctionMagnitude;
-    float efficiencyGain = 1 + (cos(DECIDEGREES_TO_RADIANS(previousRescueAngle)) - cos(DECIDEGREES_TO_RADIANS(gpsRescueAngle[AI_PITCH])));
-    
-    rescueThrottle = constrain((rcCommand[THROTTLE] + throttleCorrection) * efficiencyGain, gpsRescue()->hoverThrottle - 30, gpsRescue()->throttleMax);
-
-    DEBUG_SET(DEBUG_ALTITUDE, 0, netDirection);
-    DEBUG_SET(DEBUG_ALTITUDE, 1, throttleCorrection);
-    DEBUG_SET(DEBUG_ALTITUDE, 2, rescueThrottle);
+    DEBUG_SET(DEBUG_ALTITUDE, 0, error);
+    DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
+    DEBUG_SET(DEBUG_ALTITUDE, 2, netThrottle);
     DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
 
-    previousAltitude = currentAltitude;
-    previousRescueAngle = gpsRescueAngle[AI_PITCH];
+
 }
 
 

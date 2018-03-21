@@ -22,6 +22,15 @@ uint16_t      distanceToHome;        // distance to home point in meters
 int16_t       directionToHome;
 uint16_t      rescueThrottle;
 
+//configuration parameters
+uint16_t hoverThrottle;
+uint16_t throttleMax;
+uint16_t descentDistance; //XXX TODO: Document units for these
+int16_t rescueAngle;
+uint16_t initialAltitude;
+int16_t netThrottle;
+uint16_t tP, tI, tD;
+
 
 extern bool canUseGPSHeading;
 extern int16_t gpsRescueAngle[ANGLE_INDEX_COUNT];
