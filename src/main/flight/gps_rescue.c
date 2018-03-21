@@ -168,7 +168,8 @@ void applyGPSRescueAltitude()
     //apply PID to control variable
     netThrottle = tP * error + tI * integral + tD * derivative;
 
-    rescueThrottle = constrain((rcCommand[THROTTLE] + netThrottle), hoverThrottle - 30, throttleMax);
+
+    rescueThrottle = constrain((rescueThrottle + netThrottle), hoverThrottle - 30, throttleMax);
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, error);
     DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
