@@ -171,7 +171,7 @@ void applyGPSRescueAltitude()
     previousTimeUs = currentTimeUs;
 
     //apply PID to control variable
-    netThrottle = (tP * error + tI * integral + tD * derivative); // / cos_approx(DECIDEGREES_TO_DEGREES(attitude.values.pitch)));
+    netThrottle = (tP * error + tI * integral + tD * derivative) / 100; // / cos_approx(DECIDEGREES_TO_DEGREES(attitude.values.pitch)));
     rescueThrottle = constrain(hoverThrottle + netThrottle, hoverThrottle - 30, throttleMax);
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, error);
