@@ -38,7 +38,11 @@
 
 #include "rx/rx.h"
 
+#include "sensors/acceleration.h"
+
 #define FHZ (1000 * 200) // Five Hertz
+
+static absoluteAccelerationStatus accStatus;
 
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
@@ -144,6 +148,8 @@ void updateGPSRescueState(void)
         //rescueThrottle++;
         gpsRescueAngle[AI_PITCH]++;
     }
+
+    calculateAcceleration();
     applyGPSRescueAltitude();
 }
 
@@ -183,5 +189,49 @@ void applyGPSRescueAltitude()
 
 }
 
+void calculateAcceleration()
+{
+    static float zga = 0;
+    static float xga = 0;
+    static float yga = 0;
 
 
+    quaternion q;
+    getQuaternion(&q);
+
+    float zg = -1 * ((acc.accADC[Z] / acc.dev.acc_1G) - (q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z));
+    float xg = -1 * ((acc.accADC[X] / acc.dev.acc_1G) + (2.0f * (q.x * q.z - q.w * q.y)));
+    float yg = -1 * ((acc.accADC[Y] / acc.dev.acc_1G) - (2.0f * (q.w * q.x + q.y * q.z)));
+
+    zga = (zga * 0.998) + (zg * 0.002);
+    xga = (xga * 0.998) + (xg * 0.002);
+    yga = (yga * 0.998) + (yg * 0.002);
+
+    accStatus.zg = zg;
+    accStatus.yg = yg;
+    accStatus.xg = xg;
+
+    accStatus.zga = zga;
+    accStatus.yga = yga;
+    accStatus.xga = xga;
+
+    // If we detect our average spikes, something bad happened
+    float bumpMagnitude = (float) sqrt(sq(ABS(xg)) + sq(ABS(yg)) + sq(ABS(zg)));
+
+    accStatus.crashDetected = (accStatus.crashDetected == true || bumpMagnitude > 6.0f);
+
+    int8_t direction = 0;
+
+    bool withinDeadband = (zga <= 0.2f && zga >= -0.2f);
+
+    if (!withinDeadband) {
+        direction = (zga <= 0.2f) ? 1 : -1;
+    }
+
+    accStatus.verticalDirection = direction;
+
+    DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 0, zga * 100);
+    DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 1, bumpMagnitude * 100);
+    DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 2, direction);
+    DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 3, (accStatus.crashDetected) ? 1 : 0);
+}
