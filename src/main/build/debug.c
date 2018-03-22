@@ -58,4 +58,5 @@ const char * const debugModeNames[DEBUG_COUNT] = {
     "CORE_TEMP",
     "RUNAWAY_TAKEOFF",
     "RTH",
+    "ACCEL_STATE"
 };
