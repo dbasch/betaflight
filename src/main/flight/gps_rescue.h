@@ -28,7 +28,7 @@ uint16_t throttleMax;
 uint16_t descentDistance; //XXX TODO: Document units for these
 int16_t rescueAngle;
 uint16_t initialAltitude;
-int16_t netThrottle;
+int32_t netThrottle;
 uint16_t tP, tI, tD;
 
 

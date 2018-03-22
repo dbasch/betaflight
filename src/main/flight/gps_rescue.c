@@ -171,10 +171,11 @@ void applyGPSRescueAltitude()
     previousTimeUs = currentTimeUs;
 
     //apply PID to control variable
-    netThrottle = (tP * error + tI * integral + tD * derivative) / 100; // / cos_approx(DECIDEGREES_TO_DEGREES(attitude.values.pitch)));
+    int32_t a = (int32_t)(100 * cos_approx(DECIDEGREES_TO_DEGREES(attitude.values.pitch)));
+    netThrottle = (tP * error + tI * integral + tD * derivative) ;
     rescueThrottle = constrain(hoverThrottle + netThrottle, hoverThrottle - 30, throttleMax);
 
-    DEBUG_SET(DEBUG_ALTITUDE, 0, error);
+    DEBUG_SET(DEBUG_ALTITUDE, 0, (int32_t)(rescueThrottle / cos_approx(DECIDEGREES_TO_DEGREES(attitude.values.pitch))));
     DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
     DEBUG_SET(DEBUG_ALTITUDE, 2, netThrottle);
     DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
