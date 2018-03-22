@@ -92,6 +92,11 @@ void updateGPSRescueState(void)
             rescueAngle = gpsRescue()->angle;
             initialAltitude = gpsRescue()->initialAltitude;
             throttleMax = gpsRescue()-> throttleMax;
+            tP = gpsRescue()->tP;
+            tI = gpsRescue()->tI;
+            tD = gpsRescue()->tD;
+
+
             initialized = true;
         }
 
@@ -133,11 +138,11 @@ void updateGPSRescueState(void)
 
     //this is another hack, version 2
     if (gpsSol.groundSpeed > targetSpeed && (gpsRescueAngle[AI_PITCH] > 0)) {
-        rescueThrottle--; //compensate for angle, this is a crude hack because it should be dependent on the cos and netthrottle
-        //gpsRescueAngle[AI_PITCH] --;
+        //rescueThrottle--; //compensate for angle, this is a crude hack because it should be dependent on the cos and netthrottle
+        gpsRescueAngle[AI_PITCH]--;
     } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < rescueAngle) {
-        rescueThrottle++;
-        //gpsRescueAngle[AI_PITCH] ++;
+        //rescueThrottle++;
+        gpsRescueAngle[AI_PITCH]++;
     }
     applyGPSRescueAltitude();
 }
@@ -157,7 +162,7 @@ void applyGPSRescueAltitude()
     }
 
     const int32_t currentAltitude = getEstimatedAltitude();
-    const int32_t error = targetAltitude - currentAltitude;
+    const int32_t error = (targetAltitude - currentAltitude) / 100; // error is in meters
     const int32_t derivative = error - previousError;
     integral += error;
 
@@ -166,10 +171,8 @@ void applyGPSRescueAltitude()
     previousTimeUs = currentTimeUs;
 
     //apply PID to control variable
-    netThrottle = tP * error + tI * integral + tD * derivative;
-
-
-    rescueThrottle = constrain((rescueThrottle + netThrottle), hoverThrottle - 30, throttleMax);
+    netThrottle = (tP * error + tI * integral + tD * derivative); // / cos_approx(DECIDEGREES_TO_DEGREES(attitude.values.pitch)));
+    rescueThrottle = constrain(hoverThrottle + netThrottle, hoverThrottle - 30, throttleMax);
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, error);
     DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
