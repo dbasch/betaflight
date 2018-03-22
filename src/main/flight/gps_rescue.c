@@ -144,9 +144,11 @@ void updateGPSRescueState(void)
     if (gpsSol.groundSpeed > targetSpeed && (gpsRescueAngle[AI_PITCH] > 0)) {
         //rescueThrottle--; //compensate for angle, this is a crude hack because it should be dependent on the cos and netthrottle
         gpsRescueAngle[AI_PITCH]--;
+        canUseGPSHeading = false;
     } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < rescueAngle) {
         //rescueThrottle++;
         gpsRescueAngle[AI_PITCH]++;
+        canUseGPSHeading = true;
     }
 
     calculateAcceleration();
