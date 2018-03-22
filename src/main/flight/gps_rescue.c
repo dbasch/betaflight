@@ -215,7 +215,9 @@ void calculateAcceleration()
     accStatus.xga = xga;
 
     // If we detect our average spikes, something bad happened
-    accStatus.crashDetected = (accStatus.crashDetected == true || (float) sqrt(sq(ABS(xg)) + sq(ABS(yg)) + sq(ABS(zg))) > 6.0f);
+    float bumpMagnitude = (float) sqrt(sq(ABS(xg)) + sq(ABS(yg)) + sq(ABS(zg)));
+
+    accStatus.crashDetected = (accStatus.crashDetected == true || bumpMagnitude > 6.0f);
 
     int8_t direction = 0;
 
@@ -226,4 +228,9 @@ void calculateAcceleration()
     }
 
     accStatus.verticalDirection = direction;
+
+    DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 0, zga * 100);
+    DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 1, bumpMagnitude * 100);
+    DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 2, direction);
+    DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 3, (accStatus.crashDetected) ? 1 : 0);
 }

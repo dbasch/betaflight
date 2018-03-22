@@ -76,6 +76,7 @@ typedef enum {
     DEBUG_CORE_TEMP,
     DEBUG_RUNAWAY_TAKEOFF,
     DEBUG_RTH,
+    DEBUG_ACCELEROMETER_STATE,
     DEBUG_COUNT
 } debugType_e;
 
