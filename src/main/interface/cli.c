@@ -164,6 +164,9 @@ static bool configIsInCopy = false;
 static const char* const emptyName = "-";
 static const char* const emptryString = "";
 
+static bool loggerStarted = false;
+char debugLine[200] = "";
+
 #ifndef USE_QUAD_MIXER_ONLY
 // sync this with mixerMode_e
 static const char * const mixerNames[] = {
@@ -3149,6 +3152,45 @@ static void cliVersion(char *cmdline)
     );
 }
 
+static void cliLoggerStart(char *cmdline)
+{
+    UNUSED(cmdline);
+
+    loggerStarted = true;
+}
+
+static void cliLoggerStop(char *cmdline)
+{
+    UNUSED(cmdline);
+
+    loggerStarted = false;
+}
+
+void cliLoggerPrint()
+{
+    if(!loggerStarted) {
+        return;
+    }
+
+    static uint32_t previousTimeUs = 0;
+    const uint32_t currentTimeUs = micros();
+    const uint32_t dTime = currentTimeUs - previousTimeUs;
+
+    if (dTime < 1000 * 100) { // Only run this 5x/second
+        return;
+    }
+
+    previousTimeUs = currentTimeUs;
+
+    const char* dbgl = debugLine;
+
+    if (dbgl != emptryString) {
+        cliPrintLinef(dbgl);
+        tfp_sprintf(debugLine, "");
+    }
+}
+
+
 #if defined(USE_RESOURCE_MGMT)
 
 #define MAX_RESOURCE_INDEX(x) ((x) == 0 ? 1 : (x))
@@ -3764,6 +3806,8 @@ const clicmd_t cmdTable[] = {
 #ifdef USE_VTX_CONTROL
     CLI_COMMAND_DEF("vtx", "vtx channels on switch", NULL, cliVtx),
 #endif
+    CLI_COMMAND_DEF("logger_start", "print debug data in realtime to cli", NULL, cliLoggerStart),
+    CLI_COMMAND_DEF("logger_stop", "stop printing debug data in realtime to cli", NULL, cliLoggerStop),
 };
 
 static void cliHelp(char *cmdline)

@@ -255,7 +255,7 @@ static float imuGetPGainScaleFactor(void)
 static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
                                 bool useAcc, float ax, float ay, float az,
                                 bool useMag, float mx, float my, float mz,
-                                bool useYaw, float yawError, bool useCOG, float courseOverGround)
+                                bool useCOG, float courseOverGround)
 {
     static float integralFBx = 0.0f,  integralFBy = 0.0f, integralFBz = 0.0f;    // integral error terms scaled by Ki
 
@@ -264,11 +264,6 @@ static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
 
     // Use raw heading error (from GPS or whatever else)
     float ex = 0, ey = 0, ez = 0;
-    if (useYaw) {
-        while (yawError >  M_PIf) yawError -= (2.0f * M_PIf);
-        while (yawError < -M_PIf) yawError += (2.0f * M_PIf);
-        ez += sin_approx(yawError / 2.0f);
-    }
 
     if (useCOG) {
         // Use raw heading error (from GPS or whatever else)
@@ -433,10 +428,8 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
 
     bool useAcc = false;
     bool useMag = false;
-    bool useYaw = false;
     bool useCOG = false; // Whether or not correct yaw via imuMahonyAHRSupdate from our ground course
     float courseOverGround = 0; // To be used when useCOG is true.  Stored in Radians
-    float rawYawError = 0;
 
     const timeDelta_t deltaT = currentTimeUs - previousIMUUpdateTime;
     previousIMUUpdateTime = currentTimeUs;
@@ -454,9 +447,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
     else if (sensors(SENSOR_GPS) && STATE(GPS_FIX) && gpsSol.numSat >= 5 && gpsSol.groundSpeed >= 600) {
         // In case of a fixed-wing aircraft we can use GPS course over ground to correct heading
         if(STATE(FIXED_WING)) {
-            rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw - gpsSol.groundCourse);
             courseOverGround = DECIDEGREES_TO_RADIANS(gpsSol.groundCourse);
-            useYaw = true;
             useCOG = true;
         } else {
             // If GPS rescue mode is active and we can use it, go for it.  When we're close to home we will 
@@ -466,19 +457,13 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                 float tiltDirection = atan2_approx(attitude.values.roll, attitude.values.pitch); // For applying correction to heading based on craft tilt in 2d space
                 courseOverGround = tiltDirection + DECIDEGREES_TO_RADIANS(gpsSol.groundCourse);
 
-                rawYawError = DECIDEGREES_TO_RADIANS(attitude.values.yaw) - courseOverGround;
-
                 if (!hasInitializedGPSHeading && GPS_distanceToHome > 50) { // Initially correct the gps heading, we can deal with gradual corrections later
                     attitude.values.yaw = RADIANS_TO_DECIDEGREES(courseOverGround);
                     hasInitializedGPSHeading = true;
                 }
 
                 useCOG = true; // Tell the IMU to correct attitude.values.yaw with this data
-            } else {
-                rawYawError = 0;
             }
-            
-            useYaw = true;
         }
     }
 #endif
@@ -488,7 +473,6 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
     UNUSED(useAcc);
     UNUSED(useMag);
     UNUSED(useYaw);
-    UNUSED(rawYawError);
 #else
 
 #if defined(SIMULATOR_BUILD) && defined(SIMULATOR_IMU_SYNC)
@@ -505,7 +489,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
                         DEGREES_TO_RADIANS(gyroAverage[X]), DEGREES_TO_RADIANS(gyroAverage[Y]), DEGREES_TO_RADIANS(gyroAverage[Z]),
                         useAcc, accAverage[X], accAverage[Y], accAverage[Z],
                         useMag, mag.magADC[X], mag.magADC[Y], mag.magADC[Z],
-                        useYaw, rawYawError, useCOG, courseOverGround);
+                        useCOG, courseOverGround);
 
     imuUpdateEulerAngles();
 #endif

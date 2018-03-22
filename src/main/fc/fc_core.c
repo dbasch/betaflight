@@ -31,6 +31,8 @@
 #include "common/maths.h"
 #include "common/utils.h"
 
+#include "interface/cli.h"
+
 #include "config/feature.h"
 #include "pg/pg.h"
 #include "pg/pg_ids.h"
@@ -858,9 +860,11 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
     }
 #endif*/
 
-#ifdef USE_GPS
+cliLoggerPrint();
+
+//#ifdef USE_GPS
     updateGPSRescueState();
-#endif
+//#endif
 
     // If we're armed, at minimum throttle, and we do arming via the
     // sticks, do not process yaw input from the rx.  We do this so the
