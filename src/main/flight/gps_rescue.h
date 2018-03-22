@@ -35,6 +35,12 @@ uint16_t tP, tI, tD;
 extern bool canUseGPSHeading;
 extern int16_t gpsRescueAngle[ANGLE_INDEX_COUNT];
 
+typedef struct {
+    float xg, yg, zg, xga, yga, zga;
+    bool crashDetected, landingDetected;
+    int8_t verticalDirection;
+} absoluteAccelerationStatus;
+
 enum {
     NAV_RTH_NO_ALT          = 0,            // Maintain current altitude
     NAV_RTH_EXTRA_ALT       = 1,            // Maintain current altitude + predefined safety margin
@@ -47,3 +53,4 @@ enum {
 
 void updateGPSRescueState(void);
 void applyGPSRescueAltitude(void);
+void calculateAcceleration(void);

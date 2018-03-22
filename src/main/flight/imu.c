@@ -539,6 +539,14 @@ float getCosTiltAngle(void)
     return rMat[2][2];
 }
 
+void getQuaternion(quaternion *quat)
+{
+   quat->w = q.w;
+   quat->x = q.x;
+   quat->y = q.y;
+   quat->z = q.z;
+}
+
 int16_t calculateThrottleAngleCorrection(uint8_t throttle_correction_value)
 {
     /*
