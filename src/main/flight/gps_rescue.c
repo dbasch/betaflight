@@ -79,6 +79,8 @@ void setBearing(int16_t deg)
 */
 void updateGPSRescueState(void) 
 {
+    calculateAcceleration();
+    
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         // Reset the rescue angles to zero!
         gpsRescueAngle[AI_PITCH] = 0;
@@ -151,7 +153,6 @@ void updateGPSRescueState(void)
         canUseGPSHeading = true;
     }
 
-    calculateAcceleration();
     applyGPSRescueAltitude();
 }
 
