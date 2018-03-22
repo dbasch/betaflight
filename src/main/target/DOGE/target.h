@@ -20,6 +20,7 @@
 #define TARGET_BOARD_IDENTIFIER "DOGE"
 
 #define CONFIG_FASTLOOP_PREFERRED_ACC ACC_DEFAULT
+#define USE_GPS
 
 // tqfp48 pin 34
 #define LED0_PIN                PA13
@@ -97,8 +98,8 @@
 
 #define SERIAL_PORT_COUNT 6
 
-#define USE_ESCSERIAL
-#define ESCSERIAL_TIMER_TX_PIN  PA8 // (Hardware=0)
+//#define USE_ESCSERIAL
+//#define ESCSERIAL_TIMER_TX_PIN  PA8 // (Hardware=0)
 
 #define UART1_TX_PIN            PB6
 #define UART1_RX_PIN            PB7
