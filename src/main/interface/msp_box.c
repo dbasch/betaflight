@@ -188,12 +188,12 @@ void initActiveBoxIds(void)
 #endif
 
 #ifdef USE_GPS
-    if (feature(FEATURE_GPS)) {
+    //if (feature(FEATURE_GPS)) {
         BME(BOXGPSHOME);
         BME(BOXGPSHOLD);
 	BME(BOXGPSRESCUE);
         BME(BOXBEEPGPSCOUNT);
-    }
+   // }
 #endif
 
 #ifdef USE_RANGEFINDER

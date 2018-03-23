@@ -30,6 +30,7 @@
 #include "fc/runtime_config.h"
 #include "fc/config.h"
 #include "fc/rc_controls.h"
+#include "fc/fc_core.h"
 
 #include "flight/altitude.h"
 #include "flight/gps_rescue.h"
@@ -79,8 +80,15 @@ void setBearing(int16_t deg)
 */
 void updateGPSRescueState(void) 
 {
+    if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
+        rescueThrottle = rcCommand[THROTTLE];
+    }
+
     calculateAcceleration();
-    
+
+    executeLanding();
+
+    /*
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         // Reset the rescue angles to zero!
         gpsRescueAngle[AI_PITCH] = 0;
@@ -107,7 +115,7 @@ void updateGPSRescueState(void)
         }
 
         return;
-    }
+    }*/
 
     //canUseGPSHeading = false; // Stop taking in new GPS heading data when this mode is active.  We're going to rely on gyro only from this point forwards 
 
@@ -118,6 +126,7 @@ void updateGPSRescueState(void)
 
 
 
+    /*
 
     if (ABS(rcCommand[YAW]) < 20) {
         setBearing(GPS_directionToHome);
@@ -126,16 +135,17 @@ void updateGPSRescueState(void)
     uint16_t safetyMargin = 1000; // really we want to get this from actual data
     uint16_t targetSpeed = 2500; // cm per second, should be a parameter
 
-    targetAltitude = safetyMargin + 100 * initialAltitude;
+    targetAltitude = safetyMargin + 100 * initialAltitude;*/
 
      //are we beyond descent_distance? If so, set safe altitude and speed
+    /*
      if (GPS_distanceToHome < descentDistance) {
           //this is a hack - linear descent and slowdown
           targetAltitude = safetyMargin + 100 * initialAltitude * GPS_distanceToHome / descentDistance;
          // DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
 
           targetSpeed = constrain(targetSpeed * GPS_distanceToHome / descentDistance, 100, 2500);
-     }
+     }*/
 
      //DEBUG_SET(DEBUG_RTH, 0, gpsSol.groundSpeed);
      //DEBUG_SET(DEBUG_RTH,1, targetSpeed);
@@ -143,6 +153,7 @@ void updateGPSRescueState(void)
      //DEBUG_SET(DEBUG_RTH,3, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
 
     //this is another hack, version 2
+    /*
     if (gpsSol.groundSpeed > targetSpeed && (gpsRescueAngle[AI_PITCH] > 0)) {
         //rescueThrottle--; //compensate for angle, this is a crude hack because it should be dependent on the cos and netthrottle
         gpsRescueAngle[AI_PITCH]--;
@@ -153,7 +164,7 @@ void updateGPSRescueState(void)
         canUseGPSHeading = true;
     }
 
-    applyGPSRescueAltitude();
+    applyGPSRescueAltitude();*/
 }
 
 void applyGPSRescueAltitude()
@@ -161,7 +172,6 @@ void applyGPSRescueAltitude()
     static uint32_t previousTimeUs = 0;
     static int32_t integral = 0;
     static int32_t previousError = 0;
-
 
     const uint32_t currentTimeUs = micros();
     const uint32_t dTime = currentTimeUs - previousTimeUs;
@@ -190,6 +200,38 @@ void applyGPSRescueAltitude()
     DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
 
 
+}
+
+void executeLanding() 
+{
+    static uint32_t previousTimeUs = 0;
+    static uint32_t lastZGA = 0;
+
+    gpsRescueAngle[AI_PITCH] = 0;
+    gpsRescueAngle[AI_ROLL] = 0;
+
+    float bumpMagnitude = (float) sqrt(sq(ABS(accStatus.xg)) + sq(ABS(accStatus.yg)) + sq(ABS(accStatus.zg)));
+
+    bool landingDetected = (bumpMagnitude > 1.5f);
+
+    if(landingDetected) {
+        disarm();
+    }
+
+    const uint32_t currentTimeUs = micros();
+    const uint32_t dTime = currentTimeUs - previousTimeUs;
+
+    
+
+    /*
+
+    if(accStatus.verticalDirection == 1) {
+        rescueThrottle = constrain(rescueThrottle - 10, PWM_RANGE_MIN, PWM_RANGE_MAX);
+    } else if(accStatus.verticalDirection == -1) {
+        rescueThrottle = constrain(rescueThrottle + 10, PWM_RANGE_MIN, PWM_RANGE_MAX);
+    }*/
+
+    previousTimeUs = currentTimeUs;
 }
 
 void calculateAcceleration()
@@ -223,13 +265,7 @@ void calculateAcceleration()
 
     accStatus.crashDetected = (accStatus.crashDetected == true || bumpMagnitude > 6.0f);
 
-    int8_t direction = 0;
-
-    bool withinDeadband = (zga <= 0.2f && zga >= -0.2f);
-
-    if (!withinDeadband) {
-        direction = (zga <= 0.2f) ? 1 : -1;
-    }
+    int8_t direction = (zga <= 0.1f) ? 1 : -1;
 
     accStatus.verticalDirection = direction;
 
