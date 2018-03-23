@@ -137,18 +137,11 @@ void updateGPSRescueState(void)
           targetSpeed = constrain(targetSpeed * GPS_distanceToHome / descentDistance, 100, 2500);
      }
 
-     //DEBUG_SET(DEBUG_RTH, 0, gpsSol.groundSpeed);
-     //DEBUG_SET(DEBUG_RTH,1, targetSpeed);
-     //DEBUG_SET(DEBUG_RTH,2, gpsRescueAngle[AI_PITCH]);
-     //DEBUG_SET(DEBUG_RTH,3, DECIDEGREES_TO_DEGREES(attitude.values.yaw));
-
     //this is another hack, version 2
     if (gpsSol.groundSpeed > targetSpeed && (gpsRescueAngle[AI_PITCH] > 0)) {
-        //rescueThrottle--; //compensate for angle, this is a crude hack because it should be dependent on the cos and netthrottle
         gpsRescueAngle[AI_PITCH]--;
         canUseGPSHeading = false;
     } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < rescueAngle) {
-        //rescueThrottle++;
         gpsRescueAngle[AI_PITCH]++;
         canUseGPSHeading = true;
     }
