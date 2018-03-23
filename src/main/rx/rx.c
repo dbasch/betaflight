@@ -40,6 +40,7 @@
 #include "fc/config.h"
 #include "fc/rc_controls.h"
 #include "fc/rc_modes.h"
+#include "fc/runtime_config.h"
 
 #include "flight/failsafe.h"
 
@@ -545,10 +546,10 @@ static void detectAndApplySignalLossBehaviour(void)
             if (cmp32(currentTimeMs, rcInvalidPulsPeriod[channel]) < 0) {
                 continue;           // skip to next channel to hold channel value MAX_INVALID_PULS_TIME
             } else {
-                sample = getRxfailValue(channel);   // after that apply rxfail value
-                if (channel < NON_AUX_CHANNEL_COUNT) {
-                    rxFlightChannelsValid = false;
-                }
+                //sample = getRxfailValue(channel);   // after that apply rxfail value
+                //if (channel < NON_AUX_CHANNEL_COUNT) {
+                //    rxFlightChannelsValid = false;
+                //}
             }
         }
         if (feature(FEATURE_RX_PARALLEL_PWM | FEATURE_RX_PPM)) {
@@ -564,8 +565,10 @@ static void detectAndApplySignalLossBehaviour(void)
     } else {
         rxIsInFailsafeMode = true;
         failsafeOnValidDataFailed();
-        for (int channel = 0; channel < rxChannelCount; channel++) {
-            rcData[channel] = getRxfailValue(channel);
+        if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
+            for (int channel = 0; channel < rxChannelCount; channel++) {
+                rcData[channel] = getRxfailValue(channel);
+            }
         }
     }
 
