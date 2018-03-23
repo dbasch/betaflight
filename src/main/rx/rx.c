@@ -565,10 +565,13 @@ static void detectAndApplySignalLossBehaviour(void)
     } else {
         rxIsInFailsafeMode = true;
         failsafeOnValidDataFailed();
-        if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
+        
+        if (failsafeConfig()->failsafe_procedure != FAILSAFE_PROCEDURE_GPS_RESCUE) {
             for (int channel = 0; channel < rxChannelCount; channel++) {
                 rcData[channel] = getRxfailValue(channel);
             }
+        } else {
+            ENABLE_FLIGHT_MODE(GPS_RESCUE_MODE);
         }
     }
 
