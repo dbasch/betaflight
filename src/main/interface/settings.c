@@ -250,7 +250,7 @@ static const char * const lookupTableLowpassType[] = {
 };
 
 static const char * const lookupTableFailsafe[] = {
-    "AUTO-LAND", "DROP"
+    "AUTO-LAND", "DROP", "GPS-RESCUE"
 };
 
 static const char * const lookupTableBusType[] = {
