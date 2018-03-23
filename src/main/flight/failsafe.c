@@ -244,6 +244,10 @@ void failsafeUpdateState(void)
                             failsafeState.phase = FAILSAFE_LANDED;      // skip auto-landing procedure
                             failsafeState.receivingRxDataPeriodPreset = PERIOD_OF_3_SECONDS; // require 3 seconds of valid rxData
                             break;
+                         case FAILSAFE_PROCEDURE_GPS_RESCUE:
+                            ENABLE_FLIGHT_MODE(GPS_RESCUE_MODE);
+                            break;
+
                     }
                 }
                 reprocessState = true;
