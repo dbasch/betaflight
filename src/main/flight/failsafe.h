@@ -56,7 +56,8 @@ typedef enum {
 
 typedef enum {
     FAILSAFE_PROCEDURE_AUTO_LANDING = 0,
-    FAILSAFE_PROCEDURE_DROP_IT
+    FAILSAFE_PROCEDURE_DROP_IT,
+    FAILSAFE_PROCEDURE_GPS_RESCUE
 } failsafeProcedure_e;
 
 typedef struct failsafeState_s {
