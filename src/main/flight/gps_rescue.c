@@ -44,9 +44,12 @@
 
 static absoluteAccelerationStatus accStatus;
 
+
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
 int32_t       targetAltitude = 0; // Target altitude in cm
+int32_t       highestAltitude = 0; // Store the highest seen altitude
+
 bool initialized = false;
 
 /*
@@ -88,6 +91,8 @@ void updateGPSRescueState(void)
         canUseGPSHeading = true;
         rescueThrottle = rcCommand[THROTTLE];
         netThrottle = rescueThrottle - hoverThrottle;
+        highestAltitude = 0;
+
         DEBUG_SET(DEBUG_ALTITUDE, 1, rcCommand[THROTTLE]);
         DEBUG_SET(DEBUG_ALTITUDE, 2, attitude.values.pitch);
         DEBUG_SET(DEBUG_ALTITUDE, 3, attitude.values.roll);
@@ -128,6 +133,10 @@ void updateGPSRescueState(void)
 
     targetAltitude = safetyMargin + 100 * initialAltitude;
 
+    if (targetAltitude < highestAltitude) {
+        targetAltitude = highestAltitude;
+    }
+
      //are we beyond descent_distance? If so, set safe altitude and speed
      if (GPS_distanceToHome < descentDistance) {
           //this is a hack - linear descent and slowdown
@@ -164,6 +173,11 @@ void applyGPSRescueAltitude()
     }
 
     const int32_t currentAltitude = getEstimatedAltitude();
+
+    if (currentAltitude > highestAltitude) {
+        highestAltitude = currentAltitude;
+    }
+
     const int32_t error = (targetAltitude - currentAltitude) / 100; // error is in meters
     const int32_t derivative = error - previousError;
     integral += error;
