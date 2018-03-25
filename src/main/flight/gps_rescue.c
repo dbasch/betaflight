@@ -83,8 +83,6 @@ void setBearing(int16_t deg)
 */
 void updateGPSRescueState(void) 
 {
-    calculateAcceleration();
-    
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         // Reset the rescue angles to zero!
         gpsRescueAngle[AI_PITCH] = 0;
@@ -117,8 +115,14 @@ void updateGPSRescueState(void)
             initialized = true;
         }
 
+        if (getEstimatedAltitude() > highestAltitude) {
+            highestAltitude = getEstimatedAltitude();
+        }
+
         return;
     }
+
+    calculateAcceleration();
 
     //canUseGPSHeading = false; // Stop taking in new GPS heading data when this mode is active.  We're going to rely on gyro only from this point forwards 
 
@@ -181,10 +185,6 @@ void applyGPSRescueAltitude()
     }
 
     const int32_t currentAltitude = getEstimatedAltitude();
-
-    if (currentAltitude > highestAltitude) {
-        highestAltitude = currentAltitude;
-    }
 
     const int32_t error = (targetAltitude - currentAltitude) / 100; // error is in meters
     const int32_t derivative = error - previousError;
