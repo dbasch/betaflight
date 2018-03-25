@@ -207,7 +207,7 @@ void failsafeUpdateState(void)
                         failsafeState.receivingRxDataPeriodPreset = PERIOD_OF_1_SECONDS;    // require 1 seconds of valid rxData
                         reprocessState = true;
                     } else if (!receivingRxData) {
-                        if (false /*millis() > failsafeState.throttleLowPeriod*/) { //XXX HACK UNDO THIS
+                        if (millis() > failsafeState.throttleLowPeriod) {
                             // JustDisarm: throttle was LOW for at least 'failsafe_throttle_low_delay' seconds
                             failsafeActivate();
                             failsafeState.phase = FAILSAFE_LANDED;      // skip auto-landing procedure
