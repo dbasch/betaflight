@@ -83,6 +83,8 @@ void setBearing(int16_t deg)
 */
 void updateGPSRescueState(void) 
 {
+    calculateAcceleration();
+    
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         // Reset the rescue angles to zero!
         gpsRescueAngle[AI_PITCH] = 0;
@@ -94,8 +96,6 @@ void updateGPSRescueState(void)
 
         // Reset accelerometer status
         isDescending = false;
-        accStatus.landingDetected = 0;
-        accStatus.crashDetected = 0;
 
         DEBUG_SET(DEBUG_ALTITUDE, 1, rcCommand[THROTTLE]);
         DEBUG_SET(DEBUG_ALTITUDE, 2, attitude.values.pitch);
@@ -122,8 +122,6 @@ void updateGPSRescueState(void)
 
         return;
     }
-
-    calculateAcceleration();
 
     //canUseGPSHeading = false; // Stop taking in new GPS heading data when this mode is active.  We're going to rely on gyro only from this point forwards 
 
@@ -214,6 +212,10 @@ void calculateAcceleration()
     static float xga = 0;
     static float yga = 0;
 
+    static float highestZg = 0;
+    static float lowestZg = 0;
+    static float highestG = 0;
+
 
     quaternion q;
     getQuaternion(&q);
@@ -235,11 +237,32 @@ void calculateAcceleration()
     accStatus.xga = xga;
 
     // If we detect our average spikes, something bad happened
+
     float bumpMagnitude = (float) sqrt(sq(ABS(xg)) + sq(ABS(yg)) + sq(ABS(zg)));
 
-    accStatus.crashDetected = (accStatus.crashDetected == true || bumpMagnitude > 6.0f);
-    accStatus.landingDetected = (accStatus.landingDetected == true
-        || ABS(zg) >= constrain(GPS_distanceToHome / descentDistance * ABS(zg), 2.0f, 6.0f));
+    if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
+        accStatus.crashDetected = (accStatus.crashDetected == true || bumpMagnitude > highestG * 2.0f);
+
+        if(isDescending) {
+            accStatus.landingDetected = (accStatus.landingDetected == true
+                || ABS(zg) >= constrain(GPS_distanceToHome / descentDistance * ABS(zg), lowestZg * 1.5f, highestZg * 1.5f));
+        }
+    } else { 
+        if (ABS(zg) > highestZg) {
+            highestZg = ABS(zg);
+        }
+
+        if (ABS(zg) < lowestZg) {
+            lowestZg = ABS(zg);
+        }
+
+        if (bumpMagnitude > highestG) {
+            highestG = bumpMagnitude;
+        }
+
+        accStatus.crashDetected = false;
+        accStatus.landingDetected = false;
+    }
 
     int8_t direction = 0;
 
