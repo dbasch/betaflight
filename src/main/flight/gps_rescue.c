@@ -49,7 +49,6 @@ bool          canUseGPSHeading = true; // We will expose this to the IMU so we k
 bool          isDescending = false;
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
 int32_t       targetAltitude = 0; // Target altitude in cm
-int32_t       highestAltitude = 0; // Store the highest seen altitude
 
 bool initialized = false;
 
@@ -90,7 +89,7 @@ void updateGPSRescueState(void)
         canUseGPSHeading = true;
         rescueThrottle = rcCommand[THROTTLE];
         netThrottle = rescueThrottle - hoverThrottle;
-        highestAltitude = 0;
+
 
         // Reset accelerometer status
         isDescending = false;
@@ -102,6 +101,7 @@ void updateGPSRescueState(void)
         DEBUG_SET(DEBUG_ALTITUDE, 3, attitude.values.roll);
         if (!initialized) {
         //configuration parameters
+            highestAltitude = 0;
             hoverThrottle = gpsRescue()->hoverThrottle;
             descentDistance = gpsRescue()->descentDistance;
             rescueAngle = gpsRescue()->angle;
