@@ -49,6 +49,7 @@ bool          canUseGPSHeading = true; // We will expose this to the IMU so we k
 bool          isDescending = false;
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
 int32_t       targetAltitude = 0; // Target altitude in cm
+int32_t       highestAltitude;
 
 bool initialized = false;
 
