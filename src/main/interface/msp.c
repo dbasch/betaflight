@@ -1749,7 +1749,7 @@ static mspResult_e mspProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
                 disableRunawayTakeoff = sbufReadU8(src);
             }
             if (command) {
-                setArmingDisabled(ARMING_DISABLED_MSP);
+               // setArmingDisabled(ARMING_DISABLED_MSP);
                 if (ARMING_FLAG(ARMED)) {
                     disarm();
                 }

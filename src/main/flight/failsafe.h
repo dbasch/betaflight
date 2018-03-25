@@ -46,7 +46,8 @@ typedef enum {
     FAILSAFE_LANDING,
     FAILSAFE_LANDED,
     FAILSAFE_RX_LOSS_MONITORING,
-    FAILSAFE_RX_LOSS_RECOVERED
+    FAILSAFE_RX_LOSS_RECOVERED,
+    FAILSAFE_GPS_RESCUE
 } failsafePhase_e;
 
 typedef enum {
@@ -90,3 +91,5 @@ void failsafeOnRxResume(void);
 
 void failsafeOnValidDataReceived(void);
 void failsafeOnValidDataFailed(void);
+
+bool inRescueFailsafe;

@@ -82,12 +82,14 @@ void failsafeReset(void)
     failsafeState.receivingRxDataPeriodPreset = 0;
     failsafeState.phase = FAILSAFE_IDLE;
     failsafeState.rxLinkState = FAILSAFE_RXLINK_DOWN;
+    inRescueFailsafe = false;
 }
 
 void failsafeInit(void)
 {
     failsafeState.events = 0;
     failsafeState.monitoring = false;
+    inRescueFailsafe = false;
 
     return;
 }
@@ -250,7 +252,8 @@ void failsafeUpdateState(void)
                             failsafeState.receivingRxDataPeriodPreset = PERIOD_OF_3_SECONDS; // require 3 seconds of valid rxData
                             break;
                          case FAILSAFE_PROCEDURE_GPS_RESCUE:
-                            ENABLE_FLIGHT_MODE(GPS_RESCUE_MODE);
+                            failsafeState.phase = FAILSAFE_GPS_RESCUE;
+                            inRescueFailsafe = true;
                             break;
 
                     }
@@ -306,9 +309,15 @@ void failsafeUpdateState(void)
                 failsafeState.phase = FAILSAFE_IDLE;
                 failsafeState.active = false;
                 DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
+                inRescueFailsafe = false;
                 reprocessState = true;
                 break;
-
+            case FAILSAFE_GPS_RESCUE:
+              if (receivingRxData) {
+                      failsafeState.phase = FAILSAFE_RX_LOSS_RECOVERED;
+                      reprocessState = true;
+               }
+              break;
             default:
                 break;
         }

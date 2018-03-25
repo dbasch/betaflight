@@ -56,6 +56,8 @@
 #include "fc/rc_controls.h"
 #include "fc/runtime_config.h"
 
+#include "flight/failsafe.h"
+
 #include "msp/msp_serial.h"
 
 #include "interface/cli.h"
@@ -697,7 +699,7 @@ bool processRx(timeUs_t currentTimeUs)
         DISABLE_FLIGHT_MODE(HORIZON_MODE);
     }
 
-      if (IS_RC_MODE_ACTIVE(BOXGPSRESCUE) /* && TODO XXX: figure out the conditions */) {
+      if (IS_RC_MODE_ACTIVE(BOXGPSRESCUE) || inRescueFailsafe) { //XXX TODO: and/or what else?
             if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
                 ENABLE_FLIGHT_MODE(GPS_RESCUE_MODE);
             }
