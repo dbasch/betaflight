@@ -46,6 +46,7 @@ static absoluteAccelerationStatus accStatus;
 
 
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
+bool          isDescending = false;
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
 int32_t       targetAltitude = 0; // Target altitude in cm
 int32_t       highestAltitude = 0; // Store the highest seen altitude
@@ -92,6 +93,11 @@ void updateGPSRescueState(void)
         rescueThrottle = rcCommand[THROTTLE];
         netThrottle = rescueThrottle - hoverThrottle;
         highestAltitude = 0;
+
+        // Reset accelerometer status
+        isDescending = false;
+        accStatus.landingDetected = 0;
+        accStatus.crashDetected = 0;
 
         DEBUG_SET(DEBUG_ALTITUDE, 1, rcCommand[THROTTLE]);
         DEBUG_SET(DEBUG_ALTITUDE, 2, attitude.values.pitch);
@@ -141,9 +147,11 @@ void updateGPSRescueState(void)
      if (GPS_distanceToHome < descentDistance) {
           //this is a hack - linear descent and slowdown
           targetAltitude = safetyMargin + 100 * initialAltitude * GPS_distanceToHome / descentDistance;
-         // DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
-
           targetSpeed = constrain(targetSpeed * GPS_distanceToHome / descentDistance, 100, 2500);
+
+          isDescending = true;
+     } else { 
+        isDescending = false;
      }
 
     //this is another hack, version 2
@@ -229,6 +237,8 @@ void calculateAcceleration()
     float bumpMagnitude = (float) sqrt(sq(ABS(xg)) + sq(ABS(yg)) + sq(ABS(zg)));
 
     accStatus.crashDetected = (accStatus.crashDetected == true || bumpMagnitude > 6.0f);
+    accStatus.landingDetected = (accStatus.landingDetected == true
+        || ABS(zg) >= constrain(GPS_distanceToHome / descentDistance * ABS(zg), 2.0f, 6.0f));
 
     int8_t direction = 0;
 
@@ -242,6 +252,6 @@ void calculateAcceleration()
 
     DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 0, zga * 100);
     DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 1, bumpMagnitude * 100);
-    DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 2, direction);
+    DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 2, (accStatus.landingDetected) ? 1 : 0);
     DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 3, (accStatus.crashDetected) ? 1 : 0);
 }
