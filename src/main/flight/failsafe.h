@@ -91,3 +91,5 @@ void failsafeOnRxResume(void);
 
 void failsafeOnValidDataReceived(void);
 void failsafeOnValidDataFailed(void);
+
+bool inRescueFailsafe;
