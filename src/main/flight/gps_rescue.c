@@ -145,7 +145,7 @@ void updateGPSRescueState(void)
     targetAltitude = safetyMargin + 100 * initialAltitude;
 
     if (targetAltitude < highestAltitude) {
-        targetAltitude = highestAltitude;
+        //targetAltitude = highestAltitude;
     }
 
      //are we beyond descent_distance? If so, set safe altitude and speed
@@ -202,8 +202,8 @@ void applyGPSRescueAltitude()
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, error);
     DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
-    DEBUG_SET(DEBUG_ALTITUDE, 2, netThrottle);
-    DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
+    DEBUG_SET(DEBUG_ALTITUDE, 2, gpsRescueAngle[AI_ROLL]);
+    DEBUG_SET(DEBUG_ALTITUDE, 3, gpsRescueAngle[AI_PITCH]);
 
 
 }
