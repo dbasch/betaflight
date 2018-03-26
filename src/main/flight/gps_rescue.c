@@ -41,6 +41,7 @@
 #include "sensors/acceleration.h"
 
 #define FHZ (1000 * 200) // Five Hertz
+#define MAX_VERTICAL_SPEED 1000 // 1m/s
 
 static absoluteAccelerationStatus accStatus;
 
@@ -48,7 +49,7 @@ static absoluteAccelerationStatus accStatus;
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 bool          isDescending = false;
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
-int32_t       targetAltitude = 0; // Target altitude in cm
+int32_t       destinationAltitude = 0; // 
 int32_t       highestAltitude;
 
 bool initialized = false;
@@ -140,16 +141,16 @@ void updateGPSRescueState(void)
     uint16_t safetyMargin = 1000; // really we want to get this from actual data
     uint16_t targetSpeed = 2500; // cm per second, should be a parameter
 
-    targetAltitude = safetyMargin + 100 * initialAltitude;
+    destinationAltitude = safetyMargin + 100 * initialAltitude;
 
-    if (targetAltitude < highestAltitude) {
-        targetAltitude = highestAltitude;
+    if (destinationAltitude < highestAltitude) {
+        destinationAltitude = highestAltitude;
     }
 
      //are we beyond descent_distance? If so, set safe altitude and speed
      if (GPS_distanceToHome < descentDistance) {
           //this is a hack - linear descent and slowdown
-          targetAltitude = safetyMargin + 100 * initialAltitude * GPS_distanceToHome / descentDistance;
+          destinationAltitude = safetyMargin + 100 * initialAltitude * GPS_distanceToHome / descentDistance;
           targetSpeed = constrain(targetSpeed * GPS_distanceToHome / descentDistance, 100, 2500);
 
           isDescending = true;
@@ -165,6 +166,9 @@ void updateGPSRescueState(void)
         gpsRescueAngle[AI_PITCH]++;
         canUseGPSHeading = true;
     }
+
+    // Ease the target altitude towards destination altitude
+
 
     applyGPSRescueAltitude();
 }
@@ -184,6 +188,11 @@ void applyGPSRescueAltitude()
     }
 
     const int32_t currentAltitude = getEstimatedAltitude();
+    static int32_t targetAltitude = destinationAltitude; // Target altitude in cm that will ease towards destination altitude
+
+    const int32_t maxAltChangeRate = (MAX_VERTICAL_SPEED / 1000 / 1000) * FHZ;
+
+    targetAltitude = targetAltitude + constrain((destinationAltitude - currentAltitude), -1 * maxAltChangeRate, maxAltChangeRate);
 
     const int32_t error = (targetAltitude - currentAltitude) / 100; // error is in meters
     const int32_t derivative = error - previousError;
