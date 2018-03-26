@@ -22,35 +22,30 @@ uint16_t      distanceToHome;        // distance to home point in meters
 int16_t       directionToHome;
 uint16_t      rescueThrottle;
 
-//configuration parameters
-uint16_t hoverThrottle;
-uint16_t throttleMax;
-uint16_t descentDistance; //XXX TODO: Document units for these
-int16_t rescueAngle;
-uint16_t initialAltitude;
-int32_t netThrottle;
-uint16_t tP, tI, tD;
-
-
 extern bool canUseGPSHeading;
 extern int16_t gpsRescueAngle[ANGLE_INDEX_COUNT];
 
+typedef enum {
+    RESCUE_IDLE,
+    RESCUE_INITIALIZE,
+    RESCUE_ATTAIN_ALT,
+    RESCUE_CROSSTRACK,
+    RESCUE_LANDING_APPROACH,
+    RESCUE_LANDING,
+    RESCUE_ABORT,
+    RESCUE_COMPLETE
+} rescuePhase_e;
+
+typedef enum {
+    RESCUE_HEALTHY,
+    RESCUE_TOO_HIGH,
+    RESCUE_TOO_FAR,
+    RESCUE_CRASH_DETECTED
+} rescueFailureState_e;
+
 typedef struct {
-    float xg, yg, zg, xga, yga, zga;
-    bool crashDetected, landingDetected;
-    int8_t verticalDirection;
-} absoluteAccelerationStatus;
-
-enum {
-    NAV_RTH_NO_ALT          = 0,            // Maintain current altitude
-    NAV_RTH_EXTRA_ALT       = 1,            // Maintain current altitude + predefined safety margin
-    NAV_RTH_CONST_ALT       = 2,            // Climb/descend to predefined altitude
-    NAV_RTH_MAX_ALT         = 3,            // Track maximum altitude and climb to it when RTH
-    NAV_RTH_AT_LEAST_ALT    = 4,            // Climb to predefined altitude if below it
- };
-
- uint16_t final_altitude;
+    rescuePhase_e rescuePhase;
+    rescueFailureState_e rescueFailure;
+} rescueState_s;
 
 void updateGPSRescueState(void);
-void applyGPSRescueAltitude(void);
-void calculateAcceleration(void);

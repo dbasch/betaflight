@@ -42,16 +42,11 @@
 
 #define FHZ (1000 * 200) // Five Hertz
 
-static absoluteAccelerationStatus accStatus;
-
-
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 bool          isDescending = false;
-int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
-int32_t       targetAltitude = 0; // Target altitude in cm
-int32_t       highestAltitude;
+int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 };
 
-bool initialized = false;
+static rescueState_s rescueState;
 
 /*
  If we have new GPS data, update home heading
@@ -79,203 +74,74 @@ void setBearing(int16_t deg)
 }
 
 /*
-    Use the data we have available to set gpsRescueAngles and update internal state
+    Determine what phase we are in, determine if all criteria are met to move to the next phase
 */
 void updateGPSRescueState(void) 
 {
-    calculateAcceleration();
-    
-    if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
-        // Reset the rescue angles to zero!
-        gpsRescueAngle[AI_PITCH] = 0;
-        gpsRescueAngle[AI_ROLL] = 0;
-        canUseGPSHeading = true;
-        rescueThrottle = rcCommand[THROTTLE];
-        netThrottle = rescueThrottle - hoverThrottle;
-
-
-        // Reset accelerometer status
-        isDescending = false;
-
-        DEBUG_SET(DEBUG_ALTITUDE, 1, rcCommand[THROTTLE]);
-        DEBUG_SET(DEBUG_ALTITUDE, 2, attitude.values.pitch);
-        DEBUG_SET(DEBUG_ALTITUDE, 3, attitude.values.roll);
-        if (!initialized) {
-        //configuration parameters
-            highestAltitude = 0;
-            hoverThrottle = gpsRescue()->hoverThrottle;
-            descentDistance = gpsRescue()->descentDistance;
-            rescueAngle = gpsRescue()->angle;
-            initialAltitude = gpsRescue()->initialAltitude;
-            throttleMax = gpsRescue()-> throttleMax;
-            tP = gpsRescue()->tP;
-            tI = gpsRescue()->tI;
-            tD = gpsRescue()->tD;
-
-
-            initialized = true;
-        }
-
-        if (getEstimatedAltitude() > highestAltitude) {
-            highestAltitude = getEstimatedAltitude();
-        }
-
-        return;
+    switch (rescueState.rescuePhase) {
+        case RESCUE_IDLE:
+            idleTasks();
+            break;
+        case RESCUE_INITIALIZE:
+            // Store whether we are already in angle mode, etc
+            rescueState.rescuePhase++;
+            break;
+        case RESCUE_ATTAIN_ALT:
+            // Are we below our RTH alt?  if so, get there
+            // Are we above our RTH alt?  Skip to the next phase
+            rescueState.rescuePhase++;
+            break;
+        case RESCUE_CROSSTRACK:
+            // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
+            // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
+            break;
+        case RESCUE_LANDING_APPROACH:
+            // We have crosstracked our way to our descent radius.  Continue to crosstrack, but change our altitude setpoint to be inversely proportional to delta
+            break;
+        case RESCUE_LANDING:
+            // We have reached the XYZ envelope to be considered at "home".  We need to land gently and check our accelerometer for abnormal data.
+            break;
+        case RESCUE_COMPLETE:
+            rescueState.rescuePhase = RESCUE_IDLE;
+            break;
     }
 
-    //canUseGPSHeading = false; // Stop taking in new GPS heading data when this mode is active.  We're going to rely on gyro only from this point forwards 
-
-    //we are in rescue mode. Here's what we do:
-    //1) if we're far from home, make sure we're on the right course
-    //2) make sure we're moving at a reasonable speed and angle
-    //3) make sure the altitude is reasonable
-
-
-
-
-    if (ABS(rcCommand[YAW]) < 20) {
-        setBearing(GPS_directionToHome);
-    }
-
-    uint16_t safetyMargin = 1000; // really we want to get this from actual data
-    uint16_t targetSpeed = 2500; // cm per second, should be a parameter
-
-    targetAltitude = safetyMargin + 100 * initialAltitude;
-
-    if (targetAltitude < highestAltitude) {
-        targetAltitude = highestAltitude;
-    }
-
-     //are we beyond descent_distance? If so, set safe altitude and speed
-     if (GPS_distanceToHome < descentDistance) {
-          //this is a hack - linear descent and slowdown
-          targetAltitude = safetyMargin + 100 * initialAltitude * GPS_distanceToHome / descentDistance;
-          targetSpeed = constrain(targetSpeed * GPS_distanceToHome / descentDistance, 100, 2500);
-
-          isDescending = true;
-     } else { 
-        isDescending = false;
-     }
-
-    //this is another hack, version 2
-    if (gpsSol.groundSpeed > targetSpeed && (gpsRescueAngle[AI_PITCH] > 5)) {
-        gpsRescueAngle[AI_PITCH]--;
-        canUseGPSHeading = false;
-    } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < rescueAngle) {
-        gpsRescueAngle[AI_PITCH]++;
-        canUseGPSHeading = true;
-    }
-
-    applyGPSRescueAltitude();
+    updateGroundspeedCalculation();
+    updateAltitudeCalculation();
+    calculateThrottleAndTilt();
 }
 
-void applyGPSRescueAltitude()
+
+void rescueStart()
 {
-    static uint32_t previousTimeUs = 0;
-    static int32_t integral = 0;
-    static int32_t previousError = 0;
+    rescueState.rescuePhase = RESCUE_INITIALIZE;
+}
 
+void rescueStop()
+{
+    rescueState.rescuePhase = RESCUE_IDLE;
+}
 
-    const uint32_t currentTimeUs = micros();
-    const uint32_t dTime = currentTimeUs - previousTimeUs;
+// Things that need to run regardless of GPS rescue mode being enabled or not
+void idleTasks()
+{
+    // Get highest altitude yadda yadda yadda
+}
 
-    if (dTime < FHZ) { // Only apply altitude correction at 5hz (lowest common denominator with sensors)
-        return;
-    }
-
-    const int32_t currentAltitude = getEstimatedAltitude();
-
-    const int32_t error = (targetAltitude - currentAltitude) / 100; // error is in meters
-    const int32_t derivative = error - previousError;
-    integral += error;
-
-    //remember state for the next iteration
-    previousError = error;
-    previousTimeUs = currentTimeUs;
-
-    //apply PID to control variable
-    //int32_t ct = 100 * getCosTiltAngle();
-    netThrottle = (tP * error + tI * integral + tD * derivative) / (100 * getCosTiltAngle()) ;
-    rescueThrottle = constrain(hoverThrottle + netThrottle, hoverThrottle - 30, throttleMax);
-
-    DEBUG_SET(DEBUG_ALTITUDE, 0, error);
-    DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
-    DEBUG_SET(DEBUG_ALTITUDE, 2, netThrottle);
-    DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
-
+/**
+    PID controller for determining 
+*/
+void updateGroundspeedCalculation()
+{
 
 }
 
-void calculateAcceleration()
+void updateAltitudeCalculation()
 {
-    static float zga = 0;
-    static float xga = 0;
-    static float yga = 0;
 
-    static float highestZg = 0;
-    static float lowestZg = 0;
-    static float highestG = 0;
+}
 
+void calculateThrottleAndTilt()
+{
 
-    quaternion q;
-    getQuaternion(&q);
-
-    float zg = -1 * ((acc.accADC[Z] / acc.dev.acc_1G) - (q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z));
-    float xg = -1 * ((acc.accADC[X] / acc.dev.acc_1G) + (2.0f * (q.x * q.z - q.w * q.y)));
-    float yg = -1 * ((acc.accADC[Y] / acc.dev.acc_1G) - (2.0f * (q.w * q.x + q.y * q.z)));
-
-    zga = (zga * 0.998) + (zg * 0.002);
-    xga = (xga * 0.998) + (xg * 0.002);
-    yga = (yga * 0.998) + (yg * 0.002);
-
-    accStatus.zg = zg;
-    accStatus.yg = yg;
-    accStatus.xg = xg;
-
-    accStatus.zga = zga;
-    accStatus.yga = yga;
-    accStatus.xga = xga;
-
-    // If we detect our average spikes, something bad happened
-
-    float bumpMagnitude = (float) sqrt(sq(ABS(xg)) + sq(ABS(yg)) + sq(ABS(zg)));
-
-    if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
-        accStatus.crashDetected = (accStatus.crashDetected == true || bumpMagnitude > highestG * 2.0f);
-
-        if(isDescending) {
-            accStatus.landingDetected = (accStatus.landingDetected == true
-                || ABS(zg) >= constrain(GPS_distanceToHome / descentDistance * ABS(zg), lowestZg * 1.5f, highestZg * 1.5f));
-        }
-    } else { 
-        if (ABS(zg) > highestZg) {
-            highestZg = ABS(zg);
-        }
-
-        if (ABS(zg) < lowestZg) {
-            lowestZg = ABS(zg);
-        }
-
-        if (bumpMagnitude > highestG) {
-            highestG = bumpMagnitude;
-        }
-
-        accStatus.crashDetected = false;
-        accStatus.landingDetected = false;
-    }
-
-    int8_t direction = 0;
-
-    bool withinDeadband = (zga <= 0.2f && zga >= -0.2f);
-
-    if (!withinDeadband) {
-        direction = (zga <= 0.2f) ? 1 : -1;
-    }
-
-    accStatus.verticalDirection = direction;
-
-    DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 0, zga * 100);
-    DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 1, bumpMagnitude * 100);
-    DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 2, (accStatus.landingDetected) ? 1 : 0);
-    DEBUG_SET(DEBUG_ACCELEROMETER_STATE, 3, (accStatus.crashDetected) ? 1 : 0);
 }
