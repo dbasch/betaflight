@@ -100,6 +100,7 @@ void updateGPSRescueState(void)
             break;
         case RESCUE_LANDING:
             // We have reached the XYZ envelope to be considered at "home".  We need to land gently and check our accelerometer for abnormal data.
+            // At this point, do not let the target altitude go up anymore, so if we overshoot, we dont' move in a parabolic trajectory
             break;
         case RESCUE_COMPLETE:
             rescueState.rescuePhase = RESCUE_IDLE;
