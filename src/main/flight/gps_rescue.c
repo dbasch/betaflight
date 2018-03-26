@@ -178,7 +178,8 @@ void applyGPSRescueAltitude()
     static uint32_t previousTimeUs = 0;
     static int32_t integral = 0;
     static int32_t previousError = 0;
-
+    static int32_t targetAltitude = 0;
+    static bool init = false;
 
     const uint32_t currentTimeUs = micros();
     const uint32_t dTime = currentTimeUs - previousTimeUs;
@@ -187,10 +188,15 @@ void applyGPSRescueAltitude()
         return;
     }
 
-    const int32_t currentAltitude = getEstimatedAltitude();
-    static int32_t targetAltitude = currentALtitude(); // Target altitude in cm that will ease towards destination altitude
+    int32_t currentAltitude = getEstimatedAltitude();
+    
+    if (!init) {
+        targetAltitude = currentAltitude; // Target altitude in cm that will ease towards destination altitude
 
-    const int32_t maxAltChangeRate = (MAX_VERTICAL_SPEED / 1000 / 1000) * FHZ;
+        init = true;
+    }
+
+    const float maxAltChangeRate = (MAX_VERTICAL_SPEED / 1000 / 1000) * FHZ;
 
     targetAltitude = targetAltitude + constrain((destinationAltitude - currentAltitude), -1 * maxAltChangeRate, maxAltChangeRate);
 
