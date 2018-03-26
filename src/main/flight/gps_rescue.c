@@ -41,7 +41,7 @@
 #include "sensors/acceleration.h"
 
 #define FHZ (1000 * 200) // Five Hertz
-#define MAX_VERTICAL_SPEED 1000 // 1m/s
+#define MAX_VERTICAL_SPEED 5000 // 1m/s
 
 static absoluteAccelerationStatus accStatus;
 
