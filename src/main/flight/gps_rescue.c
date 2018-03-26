@@ -188,7 +188,7 @@ void applyGPSRescueAltitude()
     }
 
     const int32_t currentAltitude = getEstimatedAltitude();
-    static int32_t targetAltitude = destinationAltitude; // Target altitude in cm that will ease towards destination altitude
+    static int32_t targetAltitude = currentALtitude(); // Target altitude in cm that will ease towards destination altitude
 
     const int32_t maxAltChangeRate = (MAX_VERTICAL_SPEED / 1000 / 1000) * FHZ;
 
