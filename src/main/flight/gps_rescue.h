@@ -23,7 +23,7 @@ int16_t       directionToHome;
 uint16_t      rescueThrottle;
 
 //configuration parameters
-uint16_t hoverThrottle;
+uint16_t throttleMin;
 uint16_t throttleMax;
 uint16_t descentDistance; //XXX TODO: Document units for these
 int16_t rescueAngle;

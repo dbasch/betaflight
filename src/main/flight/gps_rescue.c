@@ -92,7 +92,7 @@ void updateGPSRescueState(void)
         gpsRescueAngle[AI_ROLL] = 0;
         canUseGPSHeading = true;
         rescueThrottle = rcCommand[THROTTLE];
-        netThrottle = rescueThrottle - hoverThrottle;
+        netThrottle = rescueThrottle - throttleMin;
 
 
         // Reset accelerometer status
@@ -104,7 +104,7 @@ void updateGPSRescueState(void)
         if (!initialized) {
         //configuration parameters
             highestAltitude = 0;
-            hoverThrottle = gpsRescue()->hoverThrottle;
+            throttleMin = gpsRescue()->throttleMin;
             descentDistance = gpsRescue()->descentDistance;
             rescueAngle = gpsRescue()->angle;
             initialAltitude = gpsRescue()->initialAltitude;
@@ -212,7 +212,7 @@ void applyGPSRescueAltitude()
     //apply PID to control variable
     //int32_t ct = 100 * getCosTiltAngle();
     netThrottle = (tP * error + tI * integral + tD * derivative) / (100 * getCosTiltAngle()) ;
-    rescueThrottle = constrain(rescueThrottle + netThrottle, PWM_RANGE_MIN, gpsRescue()-> throttleMax);
+    rescueThrottle = constrain(rescueThrottle + netThrottle, gpsRescue()-> throttleMin, gpsRescue()-> throttleMax);
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, error);
     DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
