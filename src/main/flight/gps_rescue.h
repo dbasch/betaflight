@@ -48,4 +48,20 @@ typedef struct {
     rescueFailureState_e rescueFailure;
 } rescueState_s;
 
+typedef struct {
+    float altGain;
+    float speedGain;
+} rescuePidState_s;
+
+typedef struct {
+    int32_t maxAltitude;
+} rescueStats_s;
+
 void updateGPSRescueState(void);
+void updateGroundspeedCalculation(void);
+void updateAltitudeCalculation(void);
+void calculateThrottleAndTilt(void);
+void idleTasks(void);
+void moveTowardsTargetEnvelope(void);
+void rescueStop(void);
+void rescueStart(void);
