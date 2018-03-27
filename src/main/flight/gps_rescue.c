@@ -212,7 +212,7 @@ void applyGPSRescueAltitude()
     //apply PID to control variable
     //int32_t ct = 100 * getCosTiltAngle();
     netThrottle = (tP * error + tI * integral + tD * derivative) / (100 * getCosTiltAngle()) ;
-    rescueThrottle = constrain(rescueThrottle + netThrottle, PWM_RANGE_MIN, PWM_RANGE_MAX);
+    rescueThrottle = constrain(rescueThrottle + netThrottle, PWM_RANGE_MIN, gpsRescue()-> throttleMax);
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, error);
     DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
