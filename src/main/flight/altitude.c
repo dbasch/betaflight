@@ -185,16 +185,48 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 {
 
     static timeUs_t previousTimeUs = 0;
+    static int16_t altitudeOffset = 0;
 
     const uint32_t dTime = currentTimeUs - previousTimeUs;
 
-    if(sensors(SENSOR_GPS)) {
-            if (dTime < GPS_UPDATE_FREQUENCY_5HZ) {
-                return;
-            }
+    if (dTime < BARO_UPDATE_FREQUENCY_40HZ) {
+        return;
     }
-    estimatedAltitude = gpsSol.llh.alt;
+
     previousTimeUs = currentTimeUs;
+
+    int32_t tmpAlt = 0;
+    bool haveBaroAlt = false;
+
+    if (sensors(SENSOR_BARO)) {
+        if (!isBaroCalibrationComplete()) {
+            performBaroCalibrationCycle();
+        } else {
+            tmpAlt = baroCalculateAltitude();
+            haveBaroAlt = true;
+        }
+    }
+
+    #ifdef USE_GPS
+        if(sensors(SENSOR_GPS)) {
+            if (haveBaroAlt) {
+                //apply some gps correction
+                tmpAlt = 0.8 * estimatedAltitude + 0.2 * gpsSol.llh.alt;
+            }
+            else {
+                tmpAlt = gpsSol.llh.alt;
+            }
+
+        }
+    #endif
+
+    if (!ARMING_FLAG(ARMED)) {
+        altitudeOffset = estimatedAltitude;
+    }
+
+    tmpAlt += altitudeOffset;
+
+    estimatedAltitude = tmpAlt;
 }
 /*
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)
@@ -427,7 +459,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 int32_t getEstimatedAltitude(void)
 {
     //return estimatedAltitude;
-    return gpsSol.llh.alt;
+    return estimatedAltitude;
 }
 
 int32_t getEstimatedVario(void)
