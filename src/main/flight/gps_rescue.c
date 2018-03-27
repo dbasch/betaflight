@@ -190,7 +190,7 @@ void applyGPSRescueAltitude()
         gpsRescueAngle[AI_PITCH] = 5;
     }
     const int32_t derivative = error - previousError;
-    integral = constrain(integral + error, 0, 50);
+    integral = constrain(integral + error, -50, 50);
     //remember state for the next iteration
     previousError = error;
     previousTimeUs = currentTimeUs;
@@ -203,7 +203,7 @@ void applyGPSRescueAltitude()
     DEBUG_SET(DEBUG_ALTITUDE, 0, error);
     DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
     DEBUG_SET(DEBUG_ALTITUDE, 2, netThrottle);
-    DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
+    DEBUG_SET(DEBUG_ALTITUDE, 3, gpsRescueAngle[AI_PITCH]);
 
 
 }
