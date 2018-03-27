@@ -50,8 +50,6 @@ int32_t       targetAltitude;
 int32_t       targetGroundspeed;
 
 static rescueState_s rescueState;
-static rescuePidState_s pidState;
-static rescueStats_s rescueStats;
 
 /*
  If we have new GPS data, update home heading
@@ -69,21 +67,21 @@ void rescueNewGpsData(void)
 void updateGPSRescueState(void) 
 {
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
-        rescueState.rescuePhase = RESCUE_IDLE;
+        rescueState.phase = RESCUE_IDLE;
     }
 
-    switch (rescueState.rescuePhase) {
+    switch (rescueState.phase) {
         case RESCUE_IDLE:
             idleTasks();
             break;
         case RESCUE_INITIALIZE:
             // Store whether we are already in angle mode, etc
-            rescueState.rescuePhase++;
+            rescueState.phase++;
             break;
         case RESCUE_ATTAIN_ALT:
             // Are we below our RTH alt?  if so, get there
             // Are we above our RTH alt?  Skip to the next phase
-            rescueState.rescuePhase++;
+            rescueState.phase++;
             break;
         case RESCUE_CROSSTRACK:
             // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
@@ -113,26 +111,26 @@ void updateGPSRescueState(void)
 void performSanityChecks()
 {
     // Just an example, but random sanity checks.  Make sure we haven't landed or crashed, etc
-    if (rescueState.rescueFailure == RESCUE_CRASH_DETECTED) {
-        rescueState.rescuePhase = RESCUE_ABORT;
+    if (rescueState.failure == RESCUE_CRASH_DETECTED) {
+        rescueState.phase = RESCUE_ABORT;
     }
 }
 
 void rescueStart()
 {
-    rescueState.rescuePhase = RESCUE_INITIALIZE;
+    rescueState.phase = RESCUE_INITIALIZE;
 }
 
 void rescueStop()
 {
-    rescueState.rescuePhase = RESCUE_IDLE;
+    rescueState.phase = RESCUE_IDLE;
 }
 
 // Things that need to run regardless of GPS rescue mode being enabled or not
 void idleTasks()
 {
-    if (getEstimatedAltitude() > rescueStats.maxAltitude) {
-        rescueStats.maxAltitude = getEstimatedAltitude();
+    if (getEstimatedAltitude() > rescueState.stats.maxAltitude) {
+        rescueState.stats.maxAltitude = getEstimatedAltitude();
     }
 }
 
@@ -157,7 +155,7 @@ void moveTowardsTargetEnvelope()
     updateAltitudeCalculation();
     calculateThrottleAndTilt();
 
-    if (rescueState.rescuePhase == RESCUE_CROSSTRACK || RESCUE_LANDING_APPROACH) {
+    if (rescueState.phase == (RESCUE_CROSSTRACK || RESCUE_LANDING_APPROACH)) {
         crossTrack();
     }
 
@@ -180,7 +178,7 @@ void updateGroundspeedCalculation()
 
     previousError = error;
 
-    pidState.speedGain = (sP * error + sI * integral + sD * derivative);
+    rescueState.pid.speedGain = (sP * error + sI * integral + sD * derivative);
 }
 
 void updateAltitudeCalculation()
@@ -200,7 +198,7 @@ void updateAltitudeCalculation()
 
     previousError = error;
 
-    pidState.altGain = (tP * error + tI * integral + tD * derivative);
+    rescueState.pid.altGain = (tP * error + tI * integral + tD * derivative);
 }
 
 void calculateThrottleAndTilt()

@@ -44,11 +44,6 @@ typedef enum {
 } rescueFailureState_e;
 
 typedef struct {
-    rescuePhase_e rescuePhase;
-    rescueFailureState_e rescueFailure;
-} rescueState_s;
-
-typedef struct {
     float altGain;
     float speedGain;
 } rescuePidState_s;
@@ -56,6 +51,14 @@ typedef struct {
 typedef struct {
     int32_t maxAltitude;
 } rescueStats_s;
+
+typedef struct {
+    rescuePhase_e phase;
+    rescueFailureState_e failure;
+    rescuePidState_s pid;
+    rescueStats_s stats;
+} rescueState_s;
+
 
 void updateGPSRescueState(void);
 void updateGroundspeedCalculation(void);
@@ -65,3 +68,5 @@ void idleTasks(void);
 void moveTowardsTargetEnvelope(void);
 void rescueStop(void);
 void rescueStart(void);
+void setBearing(int16_t deg);
+void performSanityChecks(void);
