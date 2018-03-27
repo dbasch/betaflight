@@ -41,7 +41,7 @@
 #include "sensors/acceleration.h"
 
 #define FHZ (1000 * 200) // Five Hertz
-#define MAX_VERTICAL_SPEED 5000 // 1m/s
+#define MAX_VERTICAL_SPEED 5000 // 5m/s
 
 static absoluteAccelerationStatus accStatus;
 
@@ -203,7 +203,7 @@ void applyGPSRescueAltitude()
     const int32_t error = (targetAltitude - currentAltitude) / 100; // error is in meters
     const int32_t derivative = error - previousError;
 
-    integral = constrain(integral + error, -100, 100);
+    integral = constrain(integral + error, -50, 50);
 
     //remember state for the next iteration
     previousError = error;
@@ -212,14 +212,12 @@ void applyGPSRescueAltitude()
     //apply PID to control variable
     //int32_t ct = 100 * getCosTiltAngle();
     netThrottle = (tP * error + tI * integral + tD * derivative) / (100 * getCosTiltAngle()) ;
-    rescueThrottle = constrain(hoverThrottle + netThrottle, hoverThrottle - 30, throttleMax);
+    rescueThrottle = constrain(rescueThrottle + netThrottle, PWM_RANGE_MIN, PWM_RANGE_MAX);
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, error);
     DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
     DEBUG_SET(DEBUG_ALTITUDE, 2, netThrottle);
     DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
-
-
 }
 
 void calculateAcceleration()
