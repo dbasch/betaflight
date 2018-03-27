@@ -186,9 +186,11 @@ void applyGPSRescueAltitude()
     const int32_t currentAltitude = getEstimatedAltitude();
 
     const int32_t error = (targetAltitude - currentAltitude) / 100; // error is in meters
+    if (ABS(error) > 10) {// don't dive or climb while moving super fast horizontally
+        gpsRescueAngle[AI_PITCH] = 5;
+    }
     const int32_t derivative = error - previousError;
-    integral += error;
-
+    integral = constrain(integral + error, 0, 50);
     //remember state for the next iteration
     previousError = error;
     previousTimeUs = currentTimeUs;
@@ -200,8 +202,8 @@ void applyGPSRescueAltitude()
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, error);
     DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
-    DEBUG_SET(DEBUG_ALTITUDE, 2, gpsRescueAngle[AI_ROLL]);
-    DEBUG_SET(DEBUG_ALTITUDE, 3, gpsRescueAngle[AI_PITCH]);
+    DEBUG_SET(DEBUG_ALTITUDE, 2, netThrottle);
+    DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
 
 
 }
