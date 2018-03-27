@@ -201,6 +201,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     if (sensors(SENSOR_BARO)) {
         if (!isBaroCalibrationComplete()) {
             performBaroCalibrationCycle();
+
         } else {
             tmpAlt = baroCalculateAltitude();
             haveBaroAlt = true;
@@ -220,12 +221,12 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
         }
     #endif
 
-    if (!ARMING_FLAG(ARMED)) {
+   /* if (!ARMING_FLAG(ARMED)) {
         altitudeOffset = estimatedAltitude;
     }
 
     tmpAlt += altitudeOffset;
-
+*/
     estimatedAltitude = tmpAlt;
 }
 /*
