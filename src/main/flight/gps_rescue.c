@@ -192,14 +192,17 @@ void applyGPSRescueAltitude()
     
     if (!init) {
         targetAltitude = currentAltitude; // Target altitude in cm that will ease towards destination altitude
-
         init = true;
     }
 
-    const float maxAltChangeRate = (MAX_VERTICAL_SPEED / 1000 / 1000) * FHZ;
+    const float maxAltChangeRate = MAX_VERTICAL_SPEED / 50; //XXX TODO: random number pulled out of ass
 
-    targetAltitude = targetAltitude + constrain((destinationAltitude - currentAltitude), -1 * maxAltChangeRate, maxAltChangeRate);
+    if (destinationAltitude - currentAltitude < 0) {
+        targetAltitude = targetAltitude + constrain((destinationAltitude - currentAltitude), -1 * maxAltChangeRate, maxAltChangeRate);
 
+    } else {
+        targetAltitude = destinationAltitude;
+    }
     const int32_t error = (targetAltitude - currentAltitude) / 100; // error is in meters
     const int32_t derivative = error - previousError;
 
