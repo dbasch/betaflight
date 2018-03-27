@@ -202,7 +202,8 @@ void applyGPSRescueAltitude()
 
     const int32_t error = (targetAltitude - currentAltitude) / 100; // error is in meters
     const int32_t derivative = error - previousError;
-    integral += error;
+
+    integral = constrain(integral + error, -100, 100);
 
     //remember state for the next iteration
     previousError = error;
