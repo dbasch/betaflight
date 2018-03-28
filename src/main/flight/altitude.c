@@ -237,7 +237,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 
         // Integrator - Altitude in cm
         accAlt += (vel_acc * 0.5f) * dt + vel * dt;  // integrate velocity to get distance (x= a/2 * t^2)
-        accAlt = accAlt * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_alt) + (float)baro.BaroAlt * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_alt));    // complementary filter for altitude estimation (baro & acc)
+        accAlt = accAlt * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_alt) + (float)estimatedAltitude * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_alt));    // complementary filter for altitude estimation (baro & acc)
         vel += vel_acc;
         estimatedAltitude = accAlt;
     }
@@ -245,9 +245,9 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 
 
 
-    DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_ACC, accSum[2] / accSumCount);
-    DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_VEL, vel);
-    DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_HEIGHT, accAlt);
+    //DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_ACC, accSum[2] / accSumCount);
+    //DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_VEL, vel);
+    //DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_HEIGHT, accAlt);
 
     imuResetAccelerationSum();
 
