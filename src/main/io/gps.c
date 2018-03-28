@@ -234,10 +234,10 @@ PG_RESET_TEMPLATE(gpsRescue_t, gpsRescue,
     .tP = 2,
     .tI = 4,
     .tD = 6,
-    .aP = 2,
-    .aI = 4,
-    .aD = 6,
-    .hoverThrottle = 1250,
+    .vP = 2,
+    .vI = 4,
+    .vD = 6,
+    .throttleMin = 1250,
     .throttleMax = 1800
 );
 

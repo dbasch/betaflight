@@ -78,9 +78,9 @@ typedef struct gpsRescue_s {
     uint16_t initialAltitude;
     uint16_t descentDistance;
     uint16_t tP, tI, tD;
-    uint16_t hoverThrottle;
+    uint16_t throttleMin;
     uint16_t throttleMax;
-    uint16_t aP, aI, aD;
+    uint16_t vP, vI, vD;
 } gpsRescue_t;
 
 PG_DECLARE(gpsRescue_t, gpsRescue);

@@ -135,7 +135,7 @@ void performSanityChecks()
     if (rescueState.phase == RESCUE_IDLE) {
         return;
     }
-    
+
     // Just an example, but random sanity checks.  Make sure we haven't landed or crashed, etc
     if (rescueState.failure == RESCUE_CRASH_DETECTED) {
         rescueState.phase = RESCUE_ABORT;
@@ -171,6 +171,14 @@ void rescueAttainAlt()
     /**
          This method needs to get us to a safe altitude at a low velocity, and then hand off the phase to RESCUE_CROSSTRACK
     */
+    static float previousVelocityError = 0;
+    static float previousAltitudeError = 0;
+    static float velocityIntegral = 0;
+    static float altitudeIntegral = 0;
+
+    if (!newGPSData) {
+        return;
+    }
 
     if (rescueState.sensor.currentAltitude > gpsRescue()->initialAltitude && ABS(rescueState.sensor.zVelocityAvg) < 100) {
         rescueState.phase = RESCUE_CROSSTRACK;
@@ -178,8 +186,30 @@ void rescueAttainAlt()
         return;
     }
 
+    gpsRescueAngle[AI_PITCH] = 0;
+    gpsRescueAngle[AI_ROLL] = 0;
+
     rescueState.intent.targetGroundspeed = 0;
-    rescueState.intent.targetAltitude = gpsRescue()->initialAltitude;
+    rescueState.intent.targetAltitude = (rescueState.sensor.maxAltitude > gpsRescue()->initialAltitude) ? rescueState.sensor.maxAltitude : gpsRescue()->initialAltitude;
+
+    float velocityError = -rescueState.sensor.zVelocityAvg / 100; // Error in meters/s > 0
+    float altitudeError = (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 100; // Error in meters
+
+    const int16_t velocityDerivative = velocityError - previousVelocityError;
+    velocityIntegral = constrain(velocityIntegral + velocityError, -50, 50);
+
+    previousVelocityError = velocityError;
+
+    int16_t velocityAdjustment = gpsRescue()->vP * velocityError + gpsRescue()->vI * velocityIntegral + gpsRescue()->vD * velocityDerivative;
+
+    const int16_t altitudeDerivative = altitudeError - previousAltitudeError;
+    altitudeIntegral = constrain(altitudeIntegral + altitudeError, -50, 50);
+
+    previousAltitudeError = altitudeError;
+
+    int16_t altitudeAdjustment = gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative;
+
+    rescueThrottle = constrain((gpsRescue()->throttleMin + gpsRescue->throttleMax / 2) + (altitudeAdjustment + velocityAdjustment), throttleMin, throttleMax);
 }
 
 void rescueCrosstrack()
