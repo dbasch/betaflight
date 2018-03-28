@@ -209,7 +209,7 @@ void rescueAttainAlt()
 
     int16_t altitudeAdjustment = gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative;
 
-    rescueThrottle = constrain((gpsRescue()->throttleMin + gpsRescue->throttleMax / 2) + (altitudeAdjustment + velocityAdjustment), throttleMin, throttleMax);
+    rescueThrottle = constrain((gpsRescue()->throttleMin + gpsRescue()->throttleMax / 2) + (altitudeAdjustment + velocityAdjustment), gpsRescue()->throttleMin, gpsRescue()->throttleMax);
 }
 
 void rescueCrosstrack()
