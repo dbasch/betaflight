@@ -17,13 +17,11 @@
 #include "common/axis.h"
 #include "io/gps.h"
 
-gpsLocation_t home;
-uint16_t      distanceToHome;        // distance to home point in meters
-int16_t       directionToHome;
 uint16_t      rescueThrottle;
 
 extern bool canUseGPSHeading;
 extern int16_t gpsRescueAngle[ANGLE_INDEX_COUNT];
+
 
 typedef enum {
     RESCUE_IDLE,
@@ -44,36 +42,39 @@ typedef enum {
 } rescueFailureState_e;
 
 typedef struct {
-    int32_t currentAltitude;
-    int32_t maxAltitude;
-    int32_t currentGroundspeed;
-    uint32_t distanceToHome;
     bool previouslyAngleMode;
-} rescueInfo_s;
+} rescueFlags_s;
 
 typedef struct {
     int32_t targetAltitude;
-    int32_t destinationAltitude;
     int32_t targetGroundspeed;
+    int32_t targetBearing;
 } rescueIntent_s;
+
+typedef struct {
+    int32_t maxAltitude;
+    int32_t currentAltitude;
+    uint16_t distanceToHome;
+    int16_t directionToHome;
+    uint16_t groundSpeed;
+    float zVelocity; // Up/down movement in cm/s
+    float zVelocityAvg; // Up/down average in cm/s
+} rescueSensorData_s;
 
 typedef struct {
     rescuePhase_e phase;
     rescueFailureState_e failure;
-    rescueInfo_s info;
+    rescueFlags_s flags;
+    rescueSensorData_s sensor;
     rescueIntent_s intent;
 } rescueState_s;
 
 void updateGPSRescueState(void);
-void applyAltitude(void);
-void applyAngle(void);
-void setPitch(int16_t pitch);
-void setThrottle(int16_t throttle);
-void moveTowardsTarget(void);
 void idleTasks(void);
-void moveTowardsTargetEnvelope(void);
 void rescueStop(void);
 void rescueStart(void);
 void setBearing(int16_t deg);
 void performSanityChecks(void);
-void resetAngles(void);
+
+void rescueAttainAlt(void);
+void rescueCrosstrack(void);
