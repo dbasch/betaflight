@@ -86,12 +86,23 @@ void updateGPSRescueState(void)
             break;
         case RESCUE_ATTAIN_ALT:
             // Get to a safe altitude at a low velocity ASAP
+            rescueState.intent.targetGroundspeed = 0;
+            rescueState.intent.targetAltitude = (rescueState.sensor.maxAltitude > gpsRescue()->initialAltitude) ? rescueState.sensor.maxAltitude : gpsRescue()->initialAltitude;
+            gpsRescueAngle[AI_PITCH] = 0;
+            gpsRescueAngle[AI_ROLL] = 0;
+
             rescueAttainAlt();
             break;
         case RESCUE_CROSSTRACK:
             // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
             // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
+            rescueState.intent.targetGroundspeed = 0;
+            rescueState.intent.targetAltitude = (rescueState.sensor.maxAltitude > gpsRescue()->initialAltitude) ? rescueState.sensor.maxAltitude : gpsRescue()->initialAltitude;
+            gpsRescueAngle[AI_PITCH] = gpsRescue()->angle / 2;
+            gpsRescueAngle[AI_ROLL] = 0;
+
             rescueCrosstrack();
+            rescueAttainAlt();
             break;
         case RESCUE_LANDING_APPROACH:
             // We have crosstracked our way to our descent radius.  Continue to crosstrack, but change our altitude setpoint to be inversely proportional to delta
@@ -172,6 +183,9 @@ void idleTasks()
         rescueState.sensor.maxAltitude = getEstimatedAltitude();
     }
 
+    gpsRescueAngle[AI_PITCH] = 0;
+    gpsRescueAngle[AI_ROLL] = 0;
+
     rescueThrottle = rcCommand[THROTTLE];
 }
 
@@ -189,19 +203,12 @@ void rescueAttainAlt()
         return;
     }
 
-    /*
+    
     if (rescueState.sensor.currentAltitude > gpsRescue()->initialAltitude && ABS(rescueState.sensor.zVelocityAvg) < 100) {
         rescueState.phase = RESCUE_CROSSTRACK;
 
         return;
-    }*/
-
-    gpsRescueAngle[AI_PITCH] = 0;
-    gpsRescueAngle[AI_ROLL] = 0;
-
-    rescueState.intent.targetGroundspeed = 0;
-    rescueState.intent.targetAltitude = (rescueState.sensor.maxAltitude > gpsRescue()->initialAltitude) ? rescueState.sensor.maxAltitude : gpsRescue()->initialAltitude;
-
+    }
     /**
         Vertical velocity PID controller to dampen the changes made by the altitude PID controller
     */
@@ -237,6 +244,10 @@ void rescueAttainAlt()
 
 void rescueCrosstrack()
 {
+    if(!newGPSData){
+        return;
+    }
+
     setBearing(rescueState.sensor.directionToHome);
 }
 
