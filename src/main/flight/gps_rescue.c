@@ -205,7 +205,7 @@ void applyGPSRescueAltitude()
 
     int32_t altError = ABS(destinationAltitude - currentAltitude) / 100; //Error in meters
 
-    gpsRescueAngle[AI_PITCH] = rescueAngle - constrain(altError * 3, 5, rescueAngle);
+    gpsRescueAngle[AI_PITCH] = rescueAngle - constrain(altError * 3, 0, rescueAngle - 5);
 
     integral = constrain(integral + error, -50, 50);
 
