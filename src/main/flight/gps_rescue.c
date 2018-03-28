@@ -130,12 +130,7 @@ void updateGPSRescueState(void)
     //2) make sure we're moving at a reasonable speed and angle
     //3) make sure the altitude is reasonable
 
-
-
-
-    if (ABS(rcCommand[YAW]) < 20) {
-        setBearing(GPS_directionToHome);
-    }
+    setBearing(GPS_directionToHome);
 
     uint16_t safetyMargin = 1000; // really we want to get this from actual data
     uint16_t targetSpeed = 2500; // cm per second, should be a parameter
@@ -150,7 +145,10 @@ void updateGPSRescueState(void)
      if (GPS_distanceToHome < descentDistance) {
           //this is a hack - linear descent and slowdown
           //only reduce altitude from this point on
-          targetAltitude = constrain(targetAltitude, safetyMargin + 100 * initialAltitude * GPS_distanceToHome / descentDistance, targetAltitude);
+          int32_t newAlt = safetyMargin + 100 * initialAltitude * GPS_distanceToHome / descentDistance;
+          if (newAlt < targetAltitude) {
+                targetAltitude = newAlt;
+          }
           targetSpeed = constrain(targetSpeed * GPS_distanceToHome / descentDistance, 100, 2500);
 
           isDescending = true;
