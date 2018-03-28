@@ -64,12 +64,14 @@ void rescueNewGpsData(void)
 /*
     Determine what phase we are in, determine if all criteria are met to move to the next phase
 */
-void updateGPSRescueState(void) 
+void updateGPSRescueState(void)
 {
+    debug[0] = rescueState.phase
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         rescueState.phase = RESCUE_IDLE;
+    } else if(FLIGHT_MODE(GPS_RESCUE_MODE) && rescueState.phase == RESCUE_IDLE){
+        rescueState.phase = RESCUE_INITIALIZE;
     }
-
     sensorUpdate();
 
     switch (rescueState.phase) {
