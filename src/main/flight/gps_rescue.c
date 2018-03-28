@@ -189,11 +189,12 @@ void rescueAttainAlt()
         return;
     }
 
+    /*
     if (rescueState.sensor.currentAltitude > gpsRescue()->initialAltitude && ABS(rescueState.sensor.zVelocityAvg) < 100) {
         rescueState.phase = RESCUE_CROSSTRACK;
 
         return;
-    }
+    }*/
 
     gpsRescueAngle[AI_PITCH] = 0;
     gpsRescueAngle[AI_ROLL] = 0;
