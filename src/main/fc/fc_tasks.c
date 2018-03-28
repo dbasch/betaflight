@@ -265,7 +265,8 @@ void fcTasksInit(void)
     setTaskEnabled(TASK_RANGEFINDER, sensors(SENSOR_RANGEFINDER));
 #endif
 #if defined(USE_BARO) || defined(USE_RANGEFINDER) || defined(USE_GPS)
-    setTaskEnabled(TASK_ALTITUDE, sensors(SENSOR_BARO) || sensors(SENSOR_RANGEFINDER) || sensors(SENSOR_GPS));
+    //can't use gps sensor until it receives at least one frame, so just check it's enabled
+    setTaskEnabled(TASK_ALTITUDE, sensors(SENSOR_BARO) || sensors(SENSOR_RANGEFINDER) || feature(FEATURE_GPS));
 #endif
 #ifdef USE_DASHBOARD
     setTaskEnabled(TASK_DASHBOARD, feature(FEATURE_DASHBOARD));
