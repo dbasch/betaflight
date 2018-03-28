@@ -139,7 +139,7 @@ void updateGPSRescueState(void)
     }
 
     uint16_t safetyMargin = 1000; // really we want to get this from actual data
-    //uint16_t targetSpeed = 2500; // cm per second, should be a parameter
+    uint16_t targetSpeed = 2500; // cm per second, should be a parameter
 
     destinationAltitude = safetyMargin + 100 * initialAltitude;
 
@@ -151,7 +151,7 @@ void updateGPSRescueState(void)
      if (GPS_distanceToHome < descentDistance) {
           //this is a hack - linear descent and slowdown
           destinationAltitude = safetyMargin + 100 * initialAltitude * GPS_distanceToHome / descentDistance;
-          //targetSpeed = constrain(targetSpeed * GPS_distanceToHome / descentDistance, 100, 2500);
+          targetSpeed = constrain(targetSpeed * GPS_distanceToHome / descentDistance, 100, 2500);
 
           isDescending = true;
      } else { 
@@ -159,16 +159,13 @@ void updateGPSRescueState(void)
      }
 
     //this is another hack, version 2
-     /*
     if (gpsSol.groundSpeed > targetSpeed && (gpsRescueAngle[AI_PITCH] > 5)) {
         gpsRescueAngle[AI_PITCH]--;
         canUseGPSHeading = false;
     } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < rescueAngle) {
         gpsRescueAngle[AI_PITCH]++;
         canUseGPSHeading = true;
-    }*/
-
-    // Ease the target altitude towards destination altitude
+    }
 
 
     applyGPSRescueAltitude();
@@ -180,7 +177,6 @@ void applyGPSRescueAltitude()
     static int32_t integral = 0;
     static int32_t previousError = 0;
     static int32_t targetAltitude = 0;
-    static bool init = false;
 
     const uint32_t currentTimeUs = micros();
     const uint32_t dTime = currentTimeUs - previousTimeUs;
@@ -190,22 +186,22 @@ void applyGPSRescueAltitude()
     }
 
     int32_t currentAltitude = getEstimatedAltitude();
-    
-    if (!init) {
-        targetAltitude = currentAltitude; // Target altitude in cm that will ease towards destination altitude
-        init = true;
-    }
 
     const float maxAltChangeRate = MAX_VERTICAL_SPEED / 5; //XXX TODO: random number pulled out of ass
+
+    if (ABS(targetAltitude - currentAltitude) > 500) {
+        // If our target gets too far off, reset our easing algorithm
+        targetAltitude = currentAltitude;
+    }
 
     targetAltitude = targetAltitude + constrain((destinationAltitude - currentAltitude), -1 * maxAltChangeRate, maxAltChangeRate);
 
     const int32_t error = (targetAltitude - currentAltitude) / 100; // error is in meters
     const int32_t derivative = error - previousError;
 
-    int32_t altError = ABS(destinationAltitude - currentAltitude) / 100; //Error in meters
-
-    gpsRescueAngle[AI_PITCH] = rescueAngle - constrain(altError * 3, 5, rescueAngle);
+    if (ABS(error) > 10) {
+        gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] - 1, 5, rescueAngle);
+    }
 
     integral = constrain(integral + error, -50, 50);
 
@@ -216,7 +212,8 @@ void applyGPSRescueAltitude()
     //apply PID to control variable
     //int32_t ct = 100 * getCosTiltAngle();
     netThrottle = (tP * error + tI * integral + tD * derivative) / (100 * getCosTiltAngle()) ;
-    rescueThrottle = constrain(rescueThrottle + netThrottle, gpsRescue()-> throttleMin, gpsRescue()-> throttleMax);
+
+    rescueThrottle = constrain(((throttleMin + throttleMax) / 2) + netThrottle, throttleMin, throttleMax);
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, error);
     DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
