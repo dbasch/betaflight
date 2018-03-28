@@ -264,8 +264,8 @@ void fcTasksInit(void)
 #ifdef USE_RANGEFINDER
     setTaskEnabled(TASK_RANGEFINDER, sensors(SENSOR_RANGEFINDER));
 #endif
-#if defined(USE_BARO) || defined(USE_RANGEFINDER)
-    setTaskEnabled(TASK_ALTITUDE, sensors(SENSOR_BARO) || sensors(SENSOR_RANGEFINDER));
+#if defined(USE_BARO) || defined(USE_RANGEFINDER) || defined(USE_GPS)
+    setTaskEnabled(TASK_ALTITUDE, sensors(SENSOR_BARO) || sensors(SENSOR_RANGEFINDER) || sensors(SENSOR_GPS));
 #endif
 #ifdef USE_DASHBOARD
     setTaskEnabled(TASK_DASHBOARD, feature(FEATURE_DASHBOARD));

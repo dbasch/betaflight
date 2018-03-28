@@ -203,7 +203,7 @@ void applyGPSRescueAltitude()
     DEBUG_SET(DEBUG_ALTITUDE, 0, error);
     DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
     DEBUG_SET(DEBUG_ALTITUDE, 2, netThrottle);
-    DEBUG_SET(DEBUG_ALTITUDE, 3, gpsRescueAngle[AI_PITCH]);
+    DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
 
 
 }
