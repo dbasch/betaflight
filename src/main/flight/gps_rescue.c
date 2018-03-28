@@ -41,7 +41,7 @@
 #include "sensors/acceleration.h"
 
 #define FHZ (1000 * 200) // Five Hertz
-#define MAX_VERTICAL_SPEED 5000 // 5m/s
+#define MAX_VERTICAL_SPEED 300 // 3m/s
 
 static absoluteAccelerationStatus accStatus;
 
@@ -139,7 +139,7 @@ void updateGPSRescueState(void)
     }
 
     uint16_t safetyMargin = 1000; // really we want to get this from actual data
-    uint16_t targetSpeed = 2500; // cm per second, should be a parameter
+    //uint16_t targetSpeed = 2500; // cm per second, should be a parameter
 
     destinationAltitude = safetyMargin + 100 * initialAltitude;
 
@@ -151,7 +151,7 @@ void updateGPSRescueState(void)
      if (GPS_distanceToHome < descentDistance) {
           //this is a hack - linear descent and slowdown
           destinationAltitude = safetyMargin + 100 * initialAltitude * GPS_distanceToHome / descentDistance;
-          targetSpeed = constrain(targetSpeed * GPS_distanceToHome / descentDistance, 100, 2500);
+          //targetSpeed = constrain(targetSpeed * GPS_distanceToHome / descentDistance, 100, 2500);
 
           isDescending = true;
      } else { 
@@ -159,13 +159,14 @@ void updateGPSRescueState(void)
      }
 
     //this is another hack, version 2
+     /*
     if (gpsSol.groundSpeed > targetSpeed && (gpsRescueAngle[AI_PITCH] > 5)) {
         gpsRescueAngle[AI_PITCH]--;
         canUseGPSHeading = false;
     } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < rescueAngle) {
         gpsRescueAngle[AI_PITCH]++;
         canUseGPSHeading = true;
-    }
+    }*/
 
     // Ease the target altitude towards destination altitude
 
@@ -195,16 +196,16 @@ void applyGPSRescueAltitude()
         init = true;
     }
 
-    const float maxAltChangeRate = MAX_VERTICAL_SPEED / 50; //XXX TODO: random number pulled out of ass
+    const float maxAltChangeRate = MAX_VERTICAL_SPEED / 5; //XXX TODO: random number pulled out of ass
 
-    if (destinationAltitude - currentAltitude < 0) {
-        targetAltitude = targetAltitude + constrain((destinationAltitude - currentAltitude), -1 * maxAltChangeRate, maxAltChangeRate);
+    targetAltitude = targetAltitude + constrain((destinationAltitude - currentAltitude), -1 * maxAltChangeRate, maxAltChangeRate);
 
-    } else {
-        targetAltitude = destinationAltitude;
-    }
     const int32_t error = (targetAltitude - currentAltitude) / 100; // error is in meters
     const int32_t derivative = error - previousError;
+
+    int32_t altError = ABS(destinationAltitude - currentAltitude) / 100; Error in meters
+
+    gpsRescueAngle[AI_PITCH] = rescueAngle - constrain(altError * 3, 0, rescueAngle);
 
     integral = constrain(integral + error, -50, 50);
 
