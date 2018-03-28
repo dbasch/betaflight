@@ -149,7 +149,8 @@ void updateGPSRescueState(void)
      //are we beyond descent_distance? If so, set safe altitude and speed
      if (GPS_distanceToHome < descentDistance) {
           //this is a hack - linear descent and slowdown
-          targetAltitude = safetyMargin + 100 * initialAltitude * GPS_distanceToHome / descentDistance;
+          //only reduce altitude from this point on
+          targetAltitude = constrain(targetAltitude, safetyMargin + 100 * initialAltitude * GPS_distanceToHome / descentDistance, targetAltitude);
           targetSpeed = constrain(targetSpeed * GPS_distanceToHome / descentDistance, 100, 2500);
 
           isDescending = true;
