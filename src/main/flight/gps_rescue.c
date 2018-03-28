@@ -68,6 +68,8 @@ void updateGPSRescueState(void)
 {
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         rescueState.phase = RESCUE_IDLE;
+    } else if(FLIGHT_MODE(GPS_RESCUE_MODE) && rescueState.phase == RESCUE_IDLE){
+        rescueState.phase = RESCUE_INITIALIZE;
     }
 
     sensorUpdate();
