@@ -181,21 +181,109 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
 #endif // USE_ALT_HOLD
 
 
+#if defined(USE_BARO) || defined(USE_GPS)
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 {
-
     static timeUs_t previousTimeUs = 0;
-
     const uint32_t dTime = currentTimeUs - previousTimeUs;
-
-    if(sensors(SENSOR_GPS)) {
-            if (dTime < GPS_UPDATE_FREQUENCY_5HZ) {
-                return;
-            }
+    if (dTime < BARO_UPDATE_FREQUENCY_40HZ) {
+        return;
     }
-    estimatedAltitude = gpsSol.llh.alt;
     previousTimeUs = currentTimeUs;
+
+    static float vel = 0.0f;
+    static float accAlt = 0.0f;
+
+    int32_t baroAlt = 0;
+    bool haveBaroAlt = false;
+#ifdef USE_BARO
+    if (sensors(SENSOR_BARO)) {
+        if (!isBaroCalibrationComplete()) {
+            performBaroCalibrationCycle();
+            vel = 0;
+            accAlt = 0;
+        } else {
+            baroAlt = baroCalculateAltitude();
+            estimatedAltitude = baroAlt;
+            haveBaroAlt = true;
+        }
+    }
+#endif
+
+//XXX this is a hack for Diego's tests
+#ifdef USE_GPS
+    if (sensors(SENSOR_GPS)) {
+        if (haveBaroAlt) { //apply gps correction
+            estimatedAltitude = 0.8 * estimatedAltitude + 0.2 * gpsSol.llh.alt; //TODO: check if this needs an offset
+        }
+        else {
+            estimatedAltitude = gpsSol.llh.alt;
+        }
+    }
+#endif
+
+
+
+    float accZ_tmp = 0;
+#ifdef USE_ACC
+    if (sensors(SENSOR_ACC)) {
+        const float dt = accTimeSum * 1e-6f; // delta acc reading time in seconds
+
+        // Integrator - velocity, cm/sec
+        if (accSumCount) {
+            accZ_tmp = (float)accSum[2] / accSumCount;
+        }
+        const float vel_acc = accZ_tmp * accVelScale * (float)accTimeSum;
+
+        // Integrator - Altitude in cm
+        accAlt += (vel_acc * 0.5f) * dt + vel * dt;  // integrate velocity to get distance (x= a/2 * t^2)
+        accAlt = accAlt * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_alt) + (float)baro.BaroAlt * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_alt));    // complementary filter for altitude estimation (baro & acc)
+        vel += vel_acc;
+        estimatedAltitude = accAlt;
+    }
+#endif
+
+
+
+    DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_ACC, accSum[2] / accSumCount);
+    DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_VEL, vel);
+    DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_HEIGHT, accAlt);
+
+    imuResetAccelerationSum();
+
+    int32_t baroVel = 0;
+#ifdef USE_BARO
+    if (sensors(SENSOR_BARO)) {
+        if (!isBaroCalibrationComplete()) {
+            return;
+        }
+
+        static int32_t lastBaroAlt = 0;
+        baroVel = (baroAlt - lastBaroAlt) * 1000000.0f / dTime;
+        lastBaroAlt = baroAlt;
+
+        baroVel = constrain(baroVel, -1500, 1500);  // constrain baro velocity +/- 1500cm/s
+        baroVel = applyDeadband(baroVel, 10);       // to reduce noise near zero
+    }
+#endif // USE_BARO
+
+    // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity).
+    // By using CF it's possible to correct the drift of integrated accZ (velocity) without loosing the phase, i.e without delay
+    vel = vel * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel) + baroVel * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel));
+    int32_t vel_tmp = lrintf(vel);
+
+    // set vario
+    estimatedVario = applyDeadband(vel_tmp, 5);
+
+#ifdef USE_ALT_HOLD
+    static float accZ_old = 0.0f;
+    altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
+    accZ_old = accZ_tmp;
+#else
+    UNUSED(accZ_tmp);
+#endif
 }
+#endif
 /*
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 {
@@ -427,7 +515,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 int32_t getEstimatedAltitude(void)
 {
     //return estimatedAltitude;
-    return gpsSol.llh.alt;
+    return estimatedAltitude;
 }
 
 int32_t getEstimatedVario(void)

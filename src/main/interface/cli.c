@@ -93,6 +93,7 @@ extern uint8_t __config_end;
 #include "flight/mixer.h"
 #include "flight/pid.h"
 #include "flight/servos.h"
+#include "flight/gps_rescue.h"
 
 #include "interface/cli.h"
 #include "interface/msp.h"
@@ -3011,6 +3012,18 @@ static void cliStatus(char *cmdline)
     cliPrintLinef("Voltage: %d * 0.1V (%dS battery - %s)", getBatteryVoltage(), getBatteryCellCount(), getBatteryStateString());
 
     cliPrintf("CPU Clock=%dMHz", (SystemCoreClock / 1000000));
+
+
+    int32_t zVelocity = rescueState.sensor.zVelocity;
+    int32_t zVelocityAvg = rescueState.sensor.zVelocityAvg;
+
+    cliPrintLinefeed();
+    cliPrintf("Alt: %d", rescueState.sensor.currentAltitude);
+    cliPrintLinefeed();
+    cliPrintf("Vel: %d", zVelocity);
+    cliPrintLinefeed();
+    cliPrintf("Vel Avg: %d", zVelocityAvg);
+    cliPrintLinefeed();
 
 #ifdef USE_ADC_INTERNAL
     uint16_t vrefintMv = getVrefMv();

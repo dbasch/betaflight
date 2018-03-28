@@ -19,10 +19,6 @@
 
 uint16_t      rescueThrottle;
 
-extern bool canUseGPSHeading;
-extern int16_t gpsRescueAngle[ANGLE_INDEX_COUNT];
-
-
 typedef enum {
     RESCUE_IDLE,
     RESCUE_INITIALIZE,
@@ -69,12 +65,17 @@ typedef struct {
     rescueIntent_s intent;
 } rescueState_s;
 
+extern bool canUseGPSHeading;
+extern int16_t gpsRescueAngle[ANGLE_INDEX_COUNT];
+extern rescueState_s rescueState;
+
 void updateGPSRescueState(void);
 void idleTasks(void);
 void rescueStop(void);
 void rescueStart(void);
 void setBearing(int16_t deg);
 void performSanityChecks(void);
+void sensorUpdate(void);
 
 void rescueAttainAlt(void);
 void rescueCrosstrack(void);

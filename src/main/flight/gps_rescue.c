@@ -44,8 +44,9 @@
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 };
 
-static rescueState_s rescueState;
 static bool newGPSData = false;
+
+rescueState_s rescueState;
 
 /*
  If we have new GPS data, update home heading
@@ -53,25 +54,9 @@ static bool newGPSData = false;
 */
 void rescueNewGpsData(void)
 {
-    // Calculate altitude velocity
-    static uint32_t previousTimeUs;
-    static int32_t previousAltitude;
-
-    const uint32_t currentTimeUs = micros();
-    const uint32_t dTime = currentTimeUs - previousTimeUs;
-
-    rescueState.sensor.zVelocity = (float) (gpsSol.llh.alt - previousAltitude) * ((float) dTime / 1000 / 1000);
-    rescueState.sensor.zVelocityAvg = 0.8 * rescueState.sensor.zVelocityAvg + rescueState.sensor.zVelocity * 0.2;
-
-    previousAltitude = gpsSol.llh.alt;
-    previousTimeUs = currentTimeUs;
 
    if (!ARMING_FLAG(ARMED))
     GPS_reset_home_position();
-
-    rescueState.sensor.distanceToHome = GPS_distanceToHome;
-    rescueState.sensor.directionToHome = GPS_directionToHome;
-    rescueState.sensor.groundSpeed = gpsSol.groundSpeed;
 
     newGPSData = true;
 }
@@ -85,7 +70,7 @@ void updateGPSRescueState(void)
         rescueState.phase = RESCUE_IDLE;
     }
 
-    rescueState.sensor.currentAltitude = getEstimatedAltitude();
+    sensorUpdate();
 
     switch (rescueState.phase) {
         case RESCUE_IDLE:
@@ -128,6 +113,30 @@ void updateGPSRescueState(void)
     performSanityChecks();
 
     newGPSData = false;
+}
+
+void sensorUpdate()
+{
+    rescueState.sensor.currentAltitude = getEstimatedAltitude();
+
+    // Calculate altitude velocity
+    static uint32_t previousTimeUs;
+    static int32_t previousAltitude;
+
+    const uint32_t currentTimeUs = micros();
+    const float dTime = currentTimeUs - previousTimeUs;
+
+    if (newGPSData) { // Calculate velocity at lowest common denominator
+        rescueState.sensor.distanceToHome = GPS_distanceToHome;
+        rescueState.sensor.directionToHome = GPS_directionToHome;
+        rescueState.sensor.groundSpeed = gpsSol.groundSpeed;
+
+        rescueState.sensor.zVelocity = constrain((rescueState.sensor.currentAltitude - previousAltitude) * (dTime / 1000000.0f), -1500, 1500);
+        rescueState.sensor.zVelocityAvg = 0.8 * rescueState.sensor.zVelocityAvg + rescueState.sensor.zVelocity * 0.2;
+
+        previousAltitude = rescueState.sensor.currentAltitude;
+        previousTimeUs = currentTimeUs;
+    }
 }
 
 void performSanityChecks()
@@ -192,6 +201,10 @@ void rescueAttainAlt()
     rescueState.intent.targetGroundspeed = 0;
     rescueState.intent.targetAltitude = (rescueState.sensor.maxAltitude > gpsRescue()->initialAltitude) ? rescueState.sensor.maxAltitude : gpsRescue()->initialAltitude;
 
+    /**
+        Vertical velocity PID controller to dampen the changes made by the altitude PID controller
+    */
+
     float velocityError = -rescueState.sensor.zVelocityAvg / 100; // Error in meters/s > 0
     float altitudeError = (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 100; // Error in meters
 
@@ -202,6 +215,10 @@ void rescueAttainAlt()
 
     int16_t velocityAdjustment = gpsRescue()->vP * velocityError + gpsRescue()->vI * velocityIntegral + gpsRescue()->vD * velocityDerivative;
 
+    /**
+        Altitude PID controller
+    */
+
     const int16_t altitudeDerivative = altitudeError - previousAltitudeError;
     altitudeIntegral = constrain(altitudeIntegral + altitudeError, -50, 50);
 
@@ -210,6 +227,11 @@ void rescueAttainAlt()
     int16_t altitudeAdjustment = gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative;
 
     rescueThrottle = constrain((gpsRescue()->throttleMin + gpsRescue()->throttleMax / 2) + (altitudeAdjustment + velocityAdjustment), gpsRescue()->throttleMin, gpsRescue()->throttleMax);
+
+    DEBUG_SET(DEBUG_RTH, 0, velocityAdjustment);
+    DEBUG_SET(DEBUG_RTH, 1, altitudeAdjustment);
+    DEBUG_SET(DEBUG_RTH, 2, rescueThrottle);
+    DEBUG_SET(DEBUG_RTH, 3, rescueState.sensor.zVelocityAvg);
 }
 
 void rescueCrosstrack()
