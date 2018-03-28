@@ -203,7 +203,7 @@ void applyGPSRescueAltitude()
     const int32_t error = (targetAltitude - currentAltitude) / 100; // error is in meters
     const int32_t derivative = error - previousError;
 
-    int32_t altError = ABS(destinationAltitude - currentAltitude) / 100; Error in meters
+    int32_t altError = ABS(destinationAltitude - currentAltitude) / 100; //Error in meters
 
     gpsRescueAngle[AI_PITCH] = rescueAngle - constrain(altError * 3, 0, rescueAngle);
 
