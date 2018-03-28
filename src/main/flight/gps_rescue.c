@@ -88,6 +88,12 @@ void updateGPSRescueState(void)
             break;
         case RESCUE_ATTAIN_ALT:
             // Get to a safe altitude at a low velocity ASAP
+            if (rescueState.sensor.currentAltitude > gpsRescue()->initialAltitude && ABS(rescueState.sensor.zVelocityAvg) < 100) {
+                rescueState.phase = RESCUE_CROSSTRACK;
+
+                break;
+            }
+
             rescueState.intent.targetGroundspeed = 0;
             rescueState.intent.targetAltitude = (rescueState.sensor.maxAltitude > gpsRescue()->initialAltitude) ? rescueState.sensor.maxAltitude : gpsRescue()->initialAltitude;
             gpsRescueAngle[AI_PITCH] = 0;
@@ -98,7 +104,7 @@ void updateGPSRescueState(void)
         case RESCUE_CROSSTRACK:
             // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
             // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
-            rescueState.intent.targetGroundspeed = 0;
+            rescueState.intent.targetGroundspeed = 2500;
             rescueState.intent.targetAltitude = (rescueState.sensor.maxAltitude > gpsRescue()->initialAltitude) ? rescueState.sensor.maxAltitude : gpsRescue()->initialAltitude;
             gpsRescueAngle[AI_PITCH] = gpsRescue()->angle / 2;
             gpsRescueAngle[AI_ROLL] = 0;
@@ -205,12 +211,6 @@ void rescueAttainAlt()
         return;
     }
 
-    
-    if (rescueState.sensor.currentAltitude > gpsRescue()->initialAltitude && ABS(rescueState.sensor.zVelocityAvg) < 100) {
-        rescueState.phase = RESCUE_CROSSTRACK;
-
-        return;
-    }
     /**
         Vertical velocity PID controller to dampen the changes made by the altitude PID controller
     */

@@ -3024,6 +3024,10 @@ static void cliStatus(char *cmdline)
     cliPrintLinefeed();
     cliPrintf("Vel Avg: %d", zVelocityAvg);
     cliPrintLinefeed();
+    cliPrintf("Target Altitude: %d", rescueState.intent.targetAltitude);
+    cliPrintLinefeed();
+    cliPrintf("PHASE: %d", rescueState.phase);
+    cliPrintLinefeed();
 
 #ifdef USE_ADC_INTERNAL
     uint16_t vrefintMv = getVrefMv();

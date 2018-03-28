@@ -70,6 +70,7 @@ extern int16_t gpsRescueAngle[ANGLE_INDEX_COUNT];
 extern rescueState_s rescueState;
 
 void updateGPSRescueState(void);
+void rescueNewGpsData(void);
 void idleTasks(void);
 void rescueStop(void);
 void rescueStart(void);
