@@ -54,3 +54,4 @@ enum {
 void updateGPSRescueState(void);
 void applyGPSRescueAltitude(void);
 void calculateAcceleration(void);
+void rescueNewGpsData(void);

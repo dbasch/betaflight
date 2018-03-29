@@ -166,7 +166,6 @@ bool gpsNewFrame(uint8_t c);
 struct serialPort_s;
 void gpsEnablePassthrough(struct serialPort_s *gpsPassthroughPort);
 void onGpsNewData(void);
-void rescueNewGpsData(void);
 void GPS_reset_home_position(void);
 void GPS_calc_longitude_scaling(int32_t lat);
 void navNewGpsData(void);

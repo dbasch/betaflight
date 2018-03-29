@@ -50,6 +50,7 @@
 
 #include "flight/imu.h"
 #include "flight/pid.h"
+#include "flight/gps_rescue.h"
 
 #include "sensors/sensors.h"
 
