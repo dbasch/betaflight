@@ -237,12 +237,18 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 
         // Integrator - Altitude in cm
         accAlt += (vel_acc * 0.5f) * dt + vel * dt;  // integrate velocity to get distance (x= a/2 * t^2)
+        DEBUG_SET(DEBUG_ALTITUDE, 0, accAlt);
+
         accAlt = accAlt * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_alt) + (float)estimatedAltitude * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_alt));    // complementary filter for altitude estimation (baro & acc)
         vel += vel_acc;
         estimatedAltitude = accAlt;
     }
 #endif
 
+
+    DEBUG_SET(DEBUG_ALTITUDE, 1, gpsSol.llh.alt);
+    DEBUG_SET(DEBUG_ALTITUDE, 2, baroAlt);
+    DEBUG_SET(DEBUG_ALTITUDE, 3, estimatedAltitude);
 
 
     //DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_ACC, accSum[2] / accSumCount);
@@ -287,7 +293,8 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 
 int32_t getEstimatedAltitude(void)
 {
-   return estimatedAltitude;
+   //return estimatedAltitude;
+   return gpsSol.llh.alt;
 }
 
 int32_t getEstimatedVario(void)

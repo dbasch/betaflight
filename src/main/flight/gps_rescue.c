@@ -97,9 +97,9 @@ void updateGPSRescueState(void)
         // Reset accelerometer status
         isDescending = false;
 
-        DEBUG_SET(DEBUG_ALTITUDE, 1, rcCommand[THROTTLE]);
-        DEBUG_SET(DEBUG_ALTITUDE, 2, attitude.values.pitch);
-        DEBUG_SET(DEBUG_ALTITUDE, 3, attitude.values.roll);
+        //DEBUG_SET(DEBUG_ALTITUDE, 1, rcCommand[THROTTLE]);
+        //DEBUG_SET(DEBUG_ALTITUDE, 2, attitude.values.pitch);
+        //DEBUG_SET(DEBUG_ALTITUDE, 3, attitude.values.roll);
         if (!initialized) {
         //configuration parameters
             highestAltitude = 0;
@@ -199,10 +199,10 @@ void applyGPSRescueAltitude()
     netThrottle = (tP * error + tI * integral + tD * derivative) / (100 * getCosTiltAngle()) ;
     rescueThrottle = constrain(hoverThrottle + netThrottle, hoverThrottle - 30, throttleMax);
 
-    DEBUG_SET(DEBUG_ALTITUDE, 0, error);
-    DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
-    DEBUG_SET(DEBUG_ALTITUDE, 2, netThrottle);
-    DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
+    //DEBUG_SET(DEBUG_ALTITUDE, 0, error);
+    //DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
+    //DEBUG_SET(DEBUG_ALTITUDE, 2, netThrottle);
+   // DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
 
 
 }
