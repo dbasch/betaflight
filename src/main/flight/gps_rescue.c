@@ -153,7 +153,7 @@ void sensorUpdate()
         rescueState.sensor.directionToHome = GPS_directionToHome;
         rescueState.sensor.groundSpeed = gpsSol.groundSpeed;
 
-        rescueState.sensor.zVelocity = constrain((rescueState.sensor.currentAltitude - previousAltitude) * (dTime / 1000000.0f), -1500, 1500);
+        rescueState.sensor.zVelocity = (rescueState.sensor.currentAltitude - previousAltitude) * 1000000.0f / dTime;
         rescueState.sensor.zVelocityAvg = 0.8 * rescueState.sensor.zVelocityAvg + rescueState.sensor.zVelocity * 0.2;
 
         previousAltitude = rescueState.sensor.currentAltitude;
