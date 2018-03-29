@@ -66,12 +66,12 @@ void rescueNewGpsData(void)
 */
 void updateGPSRescueState(void)
 {
-    debug[0] = rescueState.phase
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         rescueState.phase = RESCUE_IDLE;
     } else if(FLIGHT_MODE(GPS_RESCUE_MODE) && rescueState.phase == RESCUE_IDLE){
         rescueState.phase = RESCUE_INITIALIZE;
     }
+
     sensorUpdate();
 
     switch (rescueState.phase) {
@@ -96,21 +96,24 @@ void updateGPSRescueState(void)
 
             rescueState.intent.targetGroundspeed = 0;
             rescueState.intent.targetAltitude = (rescueState.sensor.maxAltitude > gpsRescue()->initialAltitude) ? rescueState.sensor.maxAltitude : gpsRescue()->initialAltitude;
-            gpsRescueAngle[AI_PITCH] = 0;
-            gpsRescueAngle[AI_ROLL] = 0;
 
+            rescueAttainSpeed();
             rescueAttainAlt();
             break;
         case RESCUE_CROSSTRACK:
             // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
             // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
-            rescueState.intent.targetGroundspeed = 2500;
+            rescueState.intent.targetGroundspeed = 1000;
             rescueState.intent.targetAltitude = (rescueState.sensor.maxAltitude > gpsRescue()->initialAltitude) ? rescueState.sensor.maxAltitude : gpsRescue()->initialAltitude;
-            gpsRescueAngle[AI_PITCH] = gpsRescue()->angle / 2;
-            gpsRescueAngle[AI_ROLL] = 0;
+
+            // If we are more than 10 meters below target, or we are under 20 meters during crosstrack mode, we should go back to attain altitude mode
+            if (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude > 1000 || rescueState.sensor.currentAltitude < 2000) {
+                rescueState.phase = RESCUE_ATTAIN_ALT;
+            }
 
             rescueCrosstrack();
             rescueAttainAlt();
+            rescueAttainSpeed();
             break;
         case RESCUE_LANDING_APPROACH:
             // We have crosstracked our way to our descent radius.  Continue to crosstrack, but change our altitude setpoint to be inversely proportional to delta
@@ -244,9 +247,24 @@ void rescueAttainAlt()
     DEBUG_SET(DEBUG_RTH, 3, rescueState.sensor.zVelocityAvg);
 }
 
+void rescueAttainSpeed()
+{
+    if (!newGPSData) {
+        return;
+    }
+
+    if (rescueState.sensor.groundSpeed > rescueState.intent.targetGroundspeed && (gpsRescueAngle[AI_PITCH] > 5)) {
+        gpsRescueAngle[AI_PITCH]--;
+        canUseGPSHeading = false;
+    } else if (rescueState.sensor.groundSpeed < rescueState.intent.targetGroundspeed && gpsRescueAngle[AI_PITCH] < gpsRescue()->angle) {
+        gpsRescueAngle[AI_PITCH]++;
+        canUseGPSHeading = true;
+    }
+}
+
 void rescueCrosstrack()
 {
-    if(!newGPSData){
+    if (!newGPSData) {
         return;
     }
 

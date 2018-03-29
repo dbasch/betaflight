@@ -80,3 +80,4 @@ void sensorUpdate(void);
 
 void rescueAttainAlt(void);
 void rescueCrosstrack(void);
+void rescueAttainSpeed(void);
