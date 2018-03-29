@@ -67,9 +67,9 @@ void rescueNewGpsData(void)
 void updateGPSRescueState(void)
 {
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
-        rescueState.phase = RESCUE_IDLE;
+        rescueStop();
     } else if(FLIGHT_MODE(GPS_RESCUE_MODE) && rescueState.phase == RESCUE_IDLE){
-        rescueState.phase = RESCUE_INITIALIZE;
+        rescueStart();
     }
 
     sensorUpdate();
@@ -88,7 +88,7 @@ void updateGPSRescueState(void)
             break;
         case RESCUE_ATTAIN_ALT:
             // Get to a safe altitude at a low velocity ASAP
-            if (rescueState.sensor.currentAltitude > gpsRescue()->initialAltitude && ABS(rescueState.sensor.zVelocityAvg) < 100) {
+            if (rescueState.sensor.currentAltitude > gpsRescue()->initialAltitude && ABS(rescueState.sensor.zVelocityAvg) < 300) {
                 rescueState.phase = RESCUE_CROSSTRACK;
 
                 break;
@@ -103,7 +103,7 @@ void updateGPSRescueState(void)
         case RESCUE_CROSSTRACK:
             // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
             // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
-            rescueState.intent.targetGroundspeed = 1000;
+            rescueState.intent.targetGroundspeed = 2000;
             rescueState.intent.targetAltitude = (rescueState.sensor.maxAltitude > gpsRescue()->initialAltitude) ? rescueState.sensor.maxAltitude : gpsRescue()->initialAltitude;
 
             // If we are more than 10 meters below target, or we are under 20 meters during crosstrack mode, we should go back to attain altitude mode
@@ -222,7 +222,7 @@ void rescueAttainAlt()
     float altitudeError = (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 100; // Error in meters
 
     const int16_t velocityDerivative = velocityError - previousVelocityError;
-    velocityIntegral = constrain(velocityIntegral + velocityError, -50, 50);
+    velocityIntegral = constrain(velocityIntegral + velocityError, -100, 100);
 
     previousVelocityError = velocityError;
 
