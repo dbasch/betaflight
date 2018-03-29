@@ -84,6 +84,9 @@
 #define M25P16_CS_PIN           PB3
 #define M25P16_SPI_INSTANCE     SPI3
 
+#define USE_GPS
+#define USE_BARO
+
 
 #define USE_VCP
 #define VBUS_SENSING_PIN PC5
