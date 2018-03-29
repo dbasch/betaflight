@@ -49,6 +49,7 @@
 #include "sensors/sensors.h"
 #include "sensors/barometer.h"
 #include "sensors/rangefinder.h"
+#include "sensors/acceleration.h"
 
 
 int32_t AltHold;
@@ -227,21 +228,18 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     float accZ_tmp = 0;
 #ifdef USE_ACC
     if (sensors(SENSOR_ACC)) {
-        const float dt = accTimeSum * 1e-6f; // delta acc reading time in seconds
+        static float lastZG = 0;
+        static uint32_t previousTimeUs;
 
-        // Integrator - velocity, cm/sec
-        if (accSumCount) {
-            accZ_tmp = (float)accSum[2] / accSumCount;
-        }
-        const float vel_acc = accZ_tmp * accVelScale * (float)accTimeSum;
+        quaternion q;
+        getQuaternion(&q);
 
-        // Integrator - Altitude in cm
-        accAlt += (vel_acc * 0.5f) * dt + vel * dt;  // integrate velocity to get distance (x= a/2 * t^2)
-        DEBUG_SET(DEBUG_ALTITUDE, 0, accAlt);
+        float zg = -1 * ((acc.accADC[Z] / acc.dev.acc_1G) - (q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z));
 
-        accAlt = accAlt * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_alt) + (float)estimatedAltitude * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_alt));    // complementary filter for altitude estimation (baro & acc)
-        vel += vel_acc;
-        estimatedAltitude = accAlt;
+        float zAcceleration = (zg - lastZG) * 1000000.0f / (currentTimeUs - previousTimeUs);
+
+        lastZG = zg;
+        previousTimeUs = currentTimeUs;
     }
 #endif
 
