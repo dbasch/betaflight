@@ -88,16 +88,15 @@ void updateGPSRescueState(void)
             break;
         case RESCUE_ATTAIN_ALT:
             // Get to a safe altitude at a low velocity ASAP
-            if (rescueState.sensor.currentAltitude > rescueState.intent.targetAltitude && ABS(rescueState.sensor.zVelocityAvg) < 300) {
+            if (ABS(rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) < 300 && ABS(rescueState.sensor.zVelocityAvg) < 300) {
                 rescueState.phase = RESCUE_CROSSTRACK;
 
                 break;
             
             }
 
-
             rescueState.intent.targetGroundspeed = 0;
-            rescueState.intent.targetAltitude = gpsRescue()->initialAltitude;
+            rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
 
             rescueCrosstrack();
             rescueAttainSpeed();
@@ -105,22 +104,38 @@ void updateGPSRescueState(void)
             break;
         case RESCUE_CROSSTRACK:
             // If we are more than 10 meters below target, or we are under 20 meters during crosstrack mode, we should go back to attain altitude mode
-            if (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude > 1000 || rescueState.sensor.currentAltitude < 2000) {
+            if (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude > 300 || rescueState.sensor.currentAltitude < 2000) {
                 rescueState.phase = RESCUE_ATTAIN_ALT;
+            }
+
+            if (GPS_distanceToHome < gpsRescue()->descentDistance) {
+                rescueState.phase = RESCUE_LANDING_APPROACH;
             }
 
             // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
             // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
             rescueState.intent.targetGroundspeed = 2000;
-            rescueState.intent.targetAltitude = gpsRescue()->initialAltitude;
+            rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
 
             rescueCrosstrack();
             rescueAttainAlt();
             rescueAttainSpeed();
             break;
         case RESCUE_LANDING_APPROACH:
-            // We have crosstracked our way to our descent radius.  Continue to crosstrack, but change our altitude setpoint to be inversely proportional to delta
-            // We need to slow down on our way to our rescue landing envelope
+            // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
+            // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
+
+            rescueState.intent.targetGroundspeed = constrain(rescueState.intent.targetGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance, 100, 2000);;
+            
+            int32_t newAlt = gpsRescue()->initialAltitude * 100  * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance;
+
+            if (newAlt < rescueState.intent.targetAltitude) {
+                rescueState.intent.targetAltitude = newAlt;
+            }
+
+            rescueCrosstrack();
+            rescueAttainAlt();
+            rescueAttainSpeed();
             break;
         case RESCUE_LANDING:
             // We have reached the XYZ envelope to be considered at "home".  We need to land gently and check our accelerometer for abnormal data.
@@ -242,8 +257,7 @@ void rescueAttainAlt()
 
     int16_t altitudeAdjustment = gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative;
 
-    rescueThrottle = constrain(
-        ((gpsRescue()->throttleMin + gpsRescue()->throttleMax) / 2) + (altitudeAdjustment + velocityAdjustment), gpsRescue()->throttleMin, gpsRescue()->throttleMax);
+    rescueThrottle = constrain(gpsRescue()->throttleHover + (altitudeAdjustment + velocityAdjustment), gpsRescue()->throttleMin, gpsRescue()->throttleMax);
 
     DEBUG_SET(DEBUG_RTH, 0, velocityAdjustment);
     DEBUG_SET(DEBUG_RTH, 1, altitudeAdjustment);

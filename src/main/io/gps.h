@@ -80,6 +80,7 @@ typedef struct gpsRescue_s {
     uint16_t tP, tI, tD;
     uint16_t throttleMin;
     uint16_t throttleMax;
+    uint16_t throttleHover;
     uint16_t vP, vI, vD;
 } gpsRescue_t;
 

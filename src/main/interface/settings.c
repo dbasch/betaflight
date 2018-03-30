@@ -609,6 +609,7 @@ const clivalue_t valueTable[] = {
 
     { "gps_rescue_throttle_min",  VAR_UINT16 | MASTER_VALUE, .config.minmax = { 1000, 2000 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, throttleMin) },
     { "gps_rescue_throttle_max",    VAR_UINT16 | MASTER_VALUE, .config.minmax = { 1000, 2000 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, throttleMax) },
+    { "gps_rescue_throttle_hover",    VAR_UINT16 | MASTER_VALUE, .config.minmax = { 1000, 2000 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, throttleHover) },
 
 
 
