@@ -515,7 +515,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 int32_t getEstimatedAltitude(void)
 {
     //return estimatedAltitude;
-    return estimatedAltitude;
+    return gpsSol.llh.alt;
 }
 
 int32_t getEstimatedVario(void)
