@@ -88,7 +88,7 @@ void updateGPSRescueState(void)
             break;
         case RESCUE_ATTAIN_ALT:
             // Get to a safe altitude at a low velocity ASAP
-            if (rescueState.sensor.currentAltitude > rescueState.sensor.targetAltitude && ABS(rescueState.sensor.zVelocityAvg) < 300) {
+            if (rescueState.sensor.currentAltitude > rescueState.intent.targetAltitude && ABS(rescueState.sensor.zVelocityAvg) < 300) {
                 rescueState.phase = RESCUE_CROSSTRACK;
 
                 break;
