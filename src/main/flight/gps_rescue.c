@@ -114,7 +114,7 @@ void updateGPSRescueState(void)
 
             // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
             // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
-            rescueState.intent.targetGroundspeed = 2000;
+            rescueState.intent.targetGroundspeed = gpsRescue()->rescueGroundspeed;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
 
             rescueCrosstrack();
@@ -122,10 +122,9 @@ void updateGPSRescueState(void)
             rescueAttainSpeed();
             break;
         case RESCUE_LANDING_APPROACH:
-            // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
-            // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
+            // We are getting close to home in the XY plane, get Z where it needs to be to move to landing phase
 
-            rescueState.intent.targetGroundspeed = constrain(rescueState.intent.targetGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance, 100, 2000);;
+            rescueState.intent.targetGroundspeed = constrain(rescueState.intent.targetGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance, 100, gpsRescue()->rescueGroundspeed);;
             
             int32_t newAlt = gpsRescue()->initialAltitude * 100  * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance;
 
