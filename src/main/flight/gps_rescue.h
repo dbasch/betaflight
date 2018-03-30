@@ -43,6 +43,7 @@ typedef struct {
 
 typedef struct {
     int32_t targetAltitude;
+    int16_t targetZVelocity;
     int32_t targetGroundspeed;
     int32_t targetBearing;
 } rescueIntent_s;

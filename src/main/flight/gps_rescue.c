@@ -88,7 +88,7 @@ void updateGPSRescueState(void)
             break;
         case RESCUE_ATTAIN_ALT:
             // Get to a safe altitude at a low velocity ASAP
-            if (ABS(rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) < 300 && ABS(rescueState.sensor.zVelocityAvg) < 300) {
+            if (ABS(rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) < 1000) {
                 rescueState.phase = RESCUE_CROSSTRACK;
 
                 break;
@@ -97,20 +97,23 @@ void updateGPSRescueState(void)
 
             rescueState.intent.targetGroundspeed = 0;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
+            rescueState.intent.targetZVelocity = constrain(1000 * ((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10000), -300, 800);
 
             rescueCrosstrack();
             rescueAttainSpeed();
             rescueAttainAlt();
             break;
         case RESCUE_CROSSTRACK:
+            if (rescueState.sensor.distanceToHome < gpsRescue()->descentDistance) {
+                rescueState.phase = RESCUE_LANDING_APPROACH;
+            }
+
             // If we are more than 10 meters below target, or we are under 20 meters during crosstrack mode, we should go back to attain altitude mode
             if (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude > 300 || rescueState.sensor.currentAltitude < 2000) {
                 rescueState.phase = RESCUE_ATTAIN_ALT;
             }
 
-            if (GPS_distanceToHome < gpsRescue()->descentDistance) {
-                rescueState.phase = RESCUE_LANDING_APPROACH;
-            }
+            rescueState.intent.targetZVelocity = constrain(1000 * ((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10000), -300, 300);
 
             // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
             // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
@@ -125,7 +128,8 @@ void updateGPSRescueState(void)
             // We are getting close to home in the XY plane, get Z where it needs to be to move to landing phase
 
             rescueState.intent.targetGroundspeed = constrain(rescueState.intent.targetGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance, 100, gpsRescue()->rescueGroundspeed);;
-            
+            rescueState.intent.targetZVelocity = -300;
+
             int32_t newAlt = gpsRescue()->initialAltitude * 100  * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance;
 
             if (newAlt < rescueState.intent.targetAltitude) {
@@ -235,7 +239,7 @@ void rescueAttainAlt()
         Vertical velocity PID controller to dampen the changes made by the altitude PID controller
     */
 
-    float velocityError = -rescueState.sensor.zVelocityAvg / 100; // Error in meters/s > 0
+    float velocityError = (rescueState.intent.targetZVelocity - rescueState.sensor.zVelocityAvg) / 100; // Error in meters/s > 0
     float altitudeError = (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 100; // Error in meters
 
     const int16_t velocityDerivative = velocityError - previousVelocityError;
@@ -301,6 +305,6 @@ void setBearing(int16_t deg)
 
     dif *= -GET_DIRECTION(rcControlsConfig()->yaw_control_reversed);
 
-    rcCommand[YAW] -= dif * currentPidProfile->pid[PID_NAVR].P / 20;
+    rcCommand[YAW] -= dif * (currentPidProfile->pid[PID_NAVR].P * 5) / 20;
 }
 

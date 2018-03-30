@@ -515,7 +515,13 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 int32_t getEstimatedAltitude(void)
 {
     //return estimatedAltitude;
-    return gpsSol.llh.alt;
+    static int32_t altitudeOffset = 0;
+
+    if (!ARMING_FLAG(ARMED)) {
+        altitudeOffset = gpsSol.llh.alt;
+    }
+
+    return gpsSol.llh.alt - altitudeOffset;
 }
 
 int32_t getEstimatedVario(void)
