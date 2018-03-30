@@ -92,24 +92,27 @@ void updateGPSRescueState(void)
                 rescueState.phase = RESCUE_CROSSTRACK;
 
                 break;
+            
             }
 
-            rescueState.intent.targetGroundspeed = 0;
-            rescueState.intent.targetAltitude = (rescueState.sensor.maxAltitude > gpsRescue()->initialAltitude) ? rescueState.sensor.maxAltitude : gpsRescue()->initialAltitude;
 
+            rescueState.intent.targetGroundspeed = 0;
+            rescueState.intent.targetAltitude = gpsRescue()->initialAltitude;
+
+            rescueCrosstrack();
             rescueAttainSpeed();
             rescueAttainAlt();
             break;
         case RESCUE_CROSSTRACK:
-            // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
-            // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
-            rescueState.intent.targetGroundspeed = 2000;
-            rescueState.intent.targetAltitude = (rescueState.sensor.maxAltitude > gpsRescue()->initialAltitude) ? rescueState.sensor.maxAltitude : gpsRescue()->initialAltitude;
-
             // If we are more than 10 meters below target, or we are under 20 meters during crosstrack mode, we should go back to attain altitude mode
             if (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude > 1000 || rescueState.sensor.currentAltitude < 2000) {
                 rescueState.phase = RESCUE_ATTAIN_ALT;
             }
+
+            // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
+            // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
+            rescueState.intent.targetGroundspeed = 2000;
+            rescueState.intent.targetAltitude = gpsRescue()->initialAltitude;
 
             rescueCrosstrack();
             rescueAttainAlt();
@@ -239,7 +242,8 @@ void rescueAttainAlt()
 
     int16_t altitudeAdjustment = gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative;
 
-    rescueThrottle = constrain((gpsRescue()->throttleMin + gpsRescue()->throttleMax / 2) + (altitudeAdjustment + velocityAdjustment), gpsRescue()->throttleMin, gpsRescue()->throttleMax);
+    rescueThrottle = constrain(
+        ((gpsRescue()->throttleMin + gpsRescue()->throttleMax) / 2) + (altitudeAdjustment + velocityAdjustment), gpsRescue()->throttleMin, gpsRescue()->throttleMax);
 
     DEBUG_SET(DEBUG_RTH, 0, velocityAdjustment);
     DEBUG_SET(DEBUG_RTH, 1, altitudeAdjustment);
