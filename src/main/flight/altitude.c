@@ -298,7 +298,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     // to do: weight this by dop: more dop, less weight for gps alt
     estimatedAltitude = (gpsAlt * gpsTrust + baroAlt * (1-gpsTrust) + accAlt) / 3;
 
-     DEBUG_SET(DEBUG_ALTITUDE, 0, 100 * (int32_t)gpsTrust);
+     DEBUG_SET(DEBUG_ALTITUDE, 0, (int32_t)(100 * gpsTrust));
 
      DEBUG_SET(DEBUG_ALTITUDE, 1, accAlt);
      DEBUG_SET(DEBUG_ALTITUDE, 2, baroAlt);
@@ -320,7 +320,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 int32_t getEstimatedAltitude(void)
 {
    //return estimatedAltitude;
-   return gpsSol.llh.alt;
+   return estimatedAltitude;
 }
 
 int32_t getEstimatedVario(void)
