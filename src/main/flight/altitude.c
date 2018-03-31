@@ -197,6 +197,8 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 
     int32_t baroAlt = 0;
     static int32_t baroAltOffset = 0;
+    static int32_t gpsAltOffset = 0;
+
     static float zgOffset = 0;
     int32_t gpsAlt = 0;
     bool haveBaroAlt = false;
@@ -224,13 +226,16 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 #endif
 
     float accZ_tmp = 0;
+    static float velocityFromAcc = 0.0;
 #ifdef USE_ACC
     if (sensors(SENSOR_ACC)) {
-        static float velocityFromAcc = 0.0;
         quaternion q;
         getQuaternion(&q);
 
         float zg = (acc.accADC[Z] / acc.dev.acc_1G) - (q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
+        if (ABS(zg) < 0.01) {
+            zg = 0.0; //noise
+        }
         if (!ARMING_FLAG(ARMED)) {
                 zgOffset = zg;
         }
@@ -238,7 +243,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 
         //integrate acceleration to get velocity
         float prevVel = velocityFromAcc;
-        velocityFromAcc += zg * 981 * dTime / 1000000.f;
+        velocityFromAcc = constrain(velocityFromAcc + zg * 981 * dTime / 1000000.f, -1500, 1500);
         //DEBUG_SET(DEBUG_ALTITUDE, 0, (int32_t)velocityFromAcc);
         //DEBUG_SET(DEBUG_ALTITUDE, 1, (int32_t)(zg * 100));
 
@@ -246,13 +251,6 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
         accAlt += (velocityFromAcc + prevVel) / 2 * dTime / 1000000.f;
     }
 #endif
-
-
-
-
-    //DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_ACC, accSum[2] / accSumCount);
-    //DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_VEL, vel);
-    //DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_HEIGHT, accAlt);
 
     imuResetAccelerationSum();
 
@@ -274,14 +272,16 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 
     // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity).
     // By using CF it's possible to correct the drift of integrated accZ (velocity) without loosing the phase, i.e without delay
-    vel = vel * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel) + baroVel * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel));
+    velocityFromAcc = velocityFromAcc * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel) + baroVel * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel));
     int32_t vel_tmp = lrintf(vel);
 
 
       if (!ARMING_FLAG(ARMED)) {
         baroAltOffset = baroAlt;
+        gpsAltOffset = gpsAlt;
       }
       baroAlt -= baroAltOffset;
+      gpsAlt -= gpsAltOffset;
 
     float gpsTrust = 100.0/gpsSol.hdop;
      if (gpsTrust > 0.9) gpsTrust = 0.9;
@@ -295,8 +295,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
      }
 
 
-    // to do: weight this by dop: more dop, less weight for gps alt
-    estimatedAltitude = (gpsAlt * gpsTrust + baroAlt * (1-gpsTrust) + accAlt) / 3;
+     estimatedAltitude = gpsAlt * gpsTrust + baroAlt * (1-gpsTrust);
 
      DEBUG_SET(DEBUG_ALTITUDE, 0, (int32_t)(100 * gpsTrust));
 
