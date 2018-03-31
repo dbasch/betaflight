@@ -196,7 +196,11 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     static float accAlt = 0.0f;
 
     int32_t baroAlt = 0;
+    static int32_t baroAltOffset = 0;
+    static float zgOffset = 0;
+    int32_t gpsAlt = 0;
     bool haveBaroAlt = false;
+    bool haveGPSAlt = false;
 #ifdef USE_BARO
     if (sensors(SENSOR_BARO)) {
         if (!isBaroCalibrationComplete()) {
@@ -205,48 +209,45 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
             accAlt = 0;
         } else {
             baroAlt = baroCalculateAltitude();
-            estimatedAltitude = baroAlt;
+
+
             haveBaroAlt = true;
         }
     }
 #endif
 
-//XXX this is a hack for Diego's tests
 #ifdef USE_GPS
     if (sensors(SENSOR_GPS)) {
-        if (haveBaroAlt) { //apply gps correction
-            estimatedAltitude = 0.8 * estimatedAltitude + 0.2 * gpsSol.llh.alt; //TODO: check if this needs an offset
-        }
-        else {
-            estimatedAltitude = gpsSol.llh.alt;
-        }
+        gpsAlt = gpsSol.llh.alt;
+        haveGPSAlt = true;
     }
 #endif
-
-
 
     float accZ_tmp = 0;
 #ifdef USE_ACC
     if (sensors(SENSOR_ACC)) {
-        static float lastZG = 0;
-        static uint32_t previousTimeUs;
-
+        static float velocityFromAcc = 0.0;
         quaternion q;
         getQuaternion(&q);
 
-        float zg = -1 * ((acc.accADC[Z] / acc.dev.acc_1G) - (q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z));
+        float zg = (acc.accADC[Z] / acc.dev.acc_1G) - (q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
+        if (!ARMING_FLAG(ARMED)) {
+                zgOffset = zg;
+        }
+        zg -= zgOffset;
 
-        float zAcceleration = (zg - lastZG) * 1000000.0f / (currentTimeUs - previousTimeUs);
+        //integrate acceleration to get velocity
+        float prevVel = velocityFromAcc;
+        velocityFromAcc += zg * 981 * dTime / 1000000.f;
+        //DEBUG_SET(DEBUG_ALTITUDE, 0, (int32_t)velocityFromAcc);
+        //DEBUG_SET(DEBUG_ALTITUDE, 1, (int32_t)(zg * 100));
 
-        lastZG = zg;
-        previousTimeUs = currentTimeUs;
+
+        accAlt += (velocityFromAcc + prevVel) / 2 * dTime / 1000000.f;
     }
 #endif
 
 
-    DEBUG_SET(DEBUG_ALTITUDE, 1, gpsSol.llh.alt);
-    DEBUG_SET(DEBUG_ALTITUDE, 2, baroAlt);
-    DEBUG_SET(DEBUG_ALTITUDE, 3, estimatedAltitude);
 
 
     //DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_ACC, accSum[2] / accSumCount);
@@ -275,6 +276,33 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     // By using CF it's possible to correct the drift of integrated accZ (velocity) without loosing the phase, i.e without delay
     vel = vel * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel) + baroVel * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel));
     int32_t vel_tmp = lrintf(vel);
+
+
+      if (!ARMING_FLAG(ARMED)) {
+        baroAltOffset = baroAlt;
+      }
+      baroAlt -= baroAltOffset;
+
+    float gpsTrust = 100.0/gpsSol.hdop;
+     if (gpsTrust > 0.9) gpsTrust = 0.9;
+
+
+    if (haveGPSAlt && haveBaroAlt) {
+        //if they are close enough, reset accAlt
+        if (ABS(gpsAlt - baroAlt) < 1000) {
+             accAlt = (gpsAlt * gpsTrust + baroAlt * (1-gpsTrust)) / 2;
+        }
+     }
+
+
+    // to do: weight this by dop: more dop, less weight for gps alt
+    estimatedAltitude = (gpsAlt * gpsTrust + baroAlt * (1-gpsTrust) + accAlt) / 3;
+
+     DEBUG_SET(DEBUG_ALTITUDE, 0, 100 * (int32_t)gpsTrust);
+
+     DEBUG_SET(DEBUG_ALTITUDE, 1, accAlt);
+     DEBUG_SET(DEBUG_ALTITUDE, 2, baroAlt);
+     DEBUG_SET(DEBUG_ALTITUDE, 3, gpsAlt);
 
     // set vario
     estimatedVario = applyDeadband(vel_tmp, 5);
