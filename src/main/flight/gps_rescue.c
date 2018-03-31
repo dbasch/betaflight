@@ -179,87 +179,39 @@ void applyGPSRescueAltitude()
 
 void calculateAcceleration()
 {
-    zGforce = (acc.accADC[Z] / acc.dev.acc_1G);
 
-    float cosTilt = getCosTiltAngle();
-    float gravityScale = (1 + (1 - cosTilt));
-    float zgForceAdj = zGforce * gravityScale;
+    static int32_t previousTimeUs = 0;
+    static float accAlt = 0.0f;
+    static int32_t count = 0;
 
-    static float zgForceAvg = 0;
+    int32_t currentTimeUs = micros();
+    uint32_t dTime = currentTimeUs - previousTimeUs;
+    //if (dTime < 50000) return;
+    static float velocityFromAcc = 0.0;
+    quaternion q;
+    getQuaternion(&q);
+    static float accAvg = 0;
+    static int32_t accTimeSum = 0;
 
-    zgForceAvg = (zgForceAvg * 0.998f) + (zgForceAdj * 0.002f);
+    float zg = (acc.accADC[Z] / acc.dev.acc_1G) - (q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
+    if (ABS(zg) < 0.01) zg = 0; //arbitrary deadband
+    float prevVel = velocityFromAcc;
 
-    bool withinDeadband = zGforce <= 1.2f && zGforce >= 0.8f;
-    int8_t direction = 0;
-
-    if (!withinDeadband) {
-        direction = zGforce > 1 ? 1 : -1;
+    count ++;
+    // the first few times the values are really off, skip them
+    if (count > 10 && count < 20) {
+            //compute an average for reference
+            accAvg = (accAvg * accTimeSum + zg * dTime) / (accTimeSum + dTime);
+            accTimeSum += dTime;
     }
 
-    int32_t zg = zGforce * 100;
-    int32_t ct = cosTilt * 100;
-    int32_t adj = zgForceAdj * 100;
-    int32_t gs = gravityScale * 100;
-    int32_t avg = zgForceAvg * 100;
-    int32_t dir = direction * 100;
 
-    tfp_sprintf(debugLine, "ZG: %d, SCALE: %d, COSTILT: %d, ADJ: %d, AVG: %d, DIR: %d", zg, gs, ct, adj, avg, dir);
-
-    /*
-    float gravityForce = (1 - getCosTiltAngle()); // We need to add this to our Z calculation
-    float gravityScale = gravityForce + 1;
-
-    zGforce = (acc.accADC[Z] / acc.dev.acc_1G) - (1);
-
-    static float avgGforce = 0;
-
-    avgGforce = (avgGforce * 0.99f) + (zGforce * 0.01f);
-
-    bool withinDeadband = zGforce <= 1.2f && zGforce >= 0.8f;
-    int8_t direction = 0;
-
-    if (!withinDeadband) {
-        direction = zGforce > 1 ? 1 : -1;
+    if (count > 20) {
+        //zg -= accAvg;
+        velocityFromAcc += zg * 981 * dTime / 1000000.f;
+        accAlt += (velocityFromAcc + prevVel) / 2 * dTime / 1000000.f;
     }
-    
+    tfp_sprintf(debugLine, "ZG: %d, ZG avg; %d, vel: %d, alt: %d", (int32_t)(10000 * zg), (int32_t)(10000 * accAvg),(int32_t)velocityFromAcc, (int32_t)accAlt);
+    previousTimeUs = currentTimeUs;
 
-    int32_t zg = zGforce * 100;
-    int32_t cmp = ((zGforce + gravityForce) * gravityScale) * 100;
-    int32_t avg = (avgGforce * 100);
-    int32_t gf = gravityForce * 100;
-    int32_t costilt = getCosTiltAngle() * 100;
-
-    tfp_sprintf(debugLine, "ZGforce: %d, AVG: %d,  DIR: %d, REAL: %d, GF: %d, COS: %d", zg, avg, direction, cmp, gf, costilt);*/
-
-    /*
-    static uint32_t previousTimeUs = 0;
-    static uint32_t velocity = 0;
-
-    const uint32_t currentTimeUs = micros();
-
-    //zGforce = (acc.accADC[Z] / acc.dev.acc_1G) * (1 + (1 - getCosTiltAngle()));
-
-    float[4] q = quaternionUpdate(acc.accADC[X], acc.accADC[Y], acc.accADC[Z], gyro.gyroADCf[X], gyroADCf[Y], gyroADCf[Z]);*
-
-    /*
-    float cmPerUs = 980 / 1000 / 1000;
-
-    static float altitude = 0;
-    static uint32_t previousTimeUs = 0;
-
-    const uint32_t currentTimeUs = micros();
-
-    zGforce = (acc.accADC[Z] / acc.dev.acc_1G) * (1 + (1 - getCosTiltAngle())) - 1; // Subtract 1 for gravity
-
-    // Acceleration rate when moving up is 
-    int32_t accelerationRate = (zGforce >= 0) : zGforce * 980 : 0;
-
-    altitude += accelerationRate * (cmPerUs * (currentTimeUs - previousTimeUs));
-
-    int32_t zg = zGforce * 100;
-    int32_t alt = altitude;
-
-    tfp_sprintf(debugLine, "Acc Rate CM: %d ZGforce: %d, ALT: %d", accelerationRate, zg, alt);
-
-    previousTimeUs = currentTimeUs;*/
 }
