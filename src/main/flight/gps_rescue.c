@@ -169,8 +169,8 @@ void updateGPSRescueState(void)
         canUseGPSHeading = true;
     }
 
-    if (ABS(altitudeError) > 10) {// don't dive or climb while moving super fast horizontally
-          gpsRescueAngle[AI_PITCH] = 5;
+    if (ABS(altitudeError) > 15) {// don't dive or climb while moving super fast horizontally
+          gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH], 5, 15);
     }
 
     applyGPSRescueAltitude();
