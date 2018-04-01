@@ -50,6 +50,7 @@ bool          isDescending = false;
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 }; // When we edit this, the PID controller will use these angles as a setpoint
 int32_t       targetAltitude = 0; // Target altitude in cm
 int32_t       highestAltitude;
+int32_t       altitudeError = 0;
 
 bool initialized = false;
 
@@ -115,6 +116,7 @@ void updateGPSRescueState(void)
 
             initialized = true;
         }
+        altitudeError = initialAltitude - getEstimatedAltitude();
 
         if (getEstimatedAltitude() > highestAltitude) {
             highestAltitude = getEstimatedAltitude();
@@ -156,6 +158,8 @@ void updateGPSRescueState(void)
         isDescending = false;
      }
 
+
+
     //this is another hack, version 2
     if (gpsSol.groundSpeed > targetSpeed && (gpsRescueAngle[AI_PITCH] > 5)) {
         gpsRescueAngle[AI_PITCH]--;
@@ -163,6 +167,10 @@ void updateGPSRescueState(void)
     } else if (gpsSol.groundSpeed < targetSpeed && gpsRescueAngle[AI_PITCH] < rescueAngle) {
         gpsRescueAngle[AI_PITCH]++;
         canUseGPSHeading = true;
+    }
+
+    if (ABS(altitudeError) > 10) {// don't dive or climb while moving super fast horizontally
+          gpsRescueAngle[AI_PITCH] = 5;
     }
 
     applyGPSRescueAltitude();
@@ -184,19 +192,16 @@ void applyGPSRescueAltitude()
 
     const int32_t currentAltitude = getEstimatedAltitude();
 
-    const int32_t error = (targetAltitude - currentAltitude) / 100; // error is in meters
-    if (ABS(error) > 10) {// don't dive or climb while moving super fast horizontally
-        gpsRescueAngle[AI_PITCH] = 5;
-    }
-    const int32_t derivative = error - previousError;
-    integral = constrain(integral + error, -50, 50);
+    altitudeError = (targetAltitude - currentAltitude) / 100; // error is in meters
+    const int32_t derivative = altitudeError - previousError;
+    integral = constrain(integral + altitudeError, -50, 50);
     //remember state for the next iteration
-    previousError = error;
+    previousError = altitudeError;
     previousTimeUs = currentTimeUs;
 
     //apply PID to control variable
     //int32_t ct = 100 * getCosTiltAngle();
-    netThrottle = (tP * error + tI * integral + tD * derivative) / (100 * getCosTiltAngle()) ;
+    netThrottle = (tP * altitudeError + tI * integral + tD * derivative) / (100 * getCosTiltAngle()) ;
     rescueThrottle = constrain(hoverThrottle + netThrottle, hoverThrottle - 30, throttleMax);
 
     //DEBUG_SET(DEBUG_ALTITUDE, 0, error);
