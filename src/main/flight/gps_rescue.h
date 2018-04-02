@@ -56,6 +56,8 @@ typedef struct {
     uint16_t groundSpeed;
     float zVelocity; // Up/down movement in cm/s
     float zVelocityAvg; // Up/down average in cm/s
+    float accMagnitude;
+    float accMagnitudeAvg;
 } rescueSensorData_s;
 
 typedef struct {

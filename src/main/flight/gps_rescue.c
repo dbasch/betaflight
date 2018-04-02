@@ -95,7 +95,7 @@ void updateGPSRescueState(void)
             
             }
 
-            rescueState.intent.targetGroundspeed = 0;
+            rescueState.intent.targetGroundspeed = 500;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
             rescueState.intent.targetZVelocity = constrain(1000 * ((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10000), -300, 800);
 
@@ -126,6 +126,9 @@ void updateGPSRescueState(void)
             break;
         case RESCUE_LANDING_APPROACH:
             // We are getting close to home in the XY plane, get Z where it needs to be to move to landing phase
+            if (rescueState.sensor.distanceToHome < 10) {
+                rescueState.phase = RESCUE_LANDING;
+            }
 
             rescueState.intent.targetGroundspeed = constrain(rescueState.intent.targetGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance, 100, gpsRescue()->rescueGroundspeed);;
             rescueState.intent.targetZVelocity = -300;
@@ -143,6 +146,19 @@ void updateGPSRescueState(void)
         case RESCUE_LANDING:
             // We have reached the XYZ envelope to be considered at "home".  We need to land gently and check our accelerometer for abnormal data.
             // At this point, do not let the target altitude go up anymore, so if we overshoot, we dont' move in a parabolic trajectory
+
+            // If we are over 120% of average magnitude, just disarm since we're pretty much home
+            if (rescueState.sensor.accMagnitude > rescueState.sensor.accMagnitudeAvg * 1.2) {
+                disarm();
+                rescueState.phase = RESCUE_COMPLETE;
+            }
+
+            rescueState.intent.targetZVelocity = -300;
+            rescueState.intent.targetGroundspeed = 0;
+            rescueState.intent.targetAltitude = 0;
+
+            rescueAttainAlt();
+            rescueAttainSpeed();
             break;
         case RESCUE_COMPLETE:
             rescueStop();
@@ -180,6 +196,9 @@ void sensorUpdate()
         previousAltitude = rescueState.sensor.currentAltitude;
         previousTimeUs = currentTimeUs;
     }
+
+    rescueState.sensor.accMagnitude = (float) sqrt(sq(ABS((acc.accADC[Z] / acc.dev.acc_1G))) + sq(ABS((acc.accADC[X] / acc.dev.acc_1G))) + sq(ABS((acc.accADC[Y] / acc.dev.acc_1G))));
+    rescueState.sensor.accMagnitudeAvg = (rescueState.sensor.accMagnitudeAvg * 0.998) + (rescueState.sensor.accMagnitude * 0.002);
 }
 
 void performSanityChecks()
@@ -274,7 +293,7 @@ void rescueAttainSpeed()
         return;
     }
 
-    if (rescueState.sensor.groundSpeed > rescueState.intent.targetGroundspeed && (gpsRescueAngle[AI_PITCH] > 5)) {
+    if (rescueState.sensor.groundSpeed > rescueState.intent.targetGroundspeed) {
         gpsRescueAngle[AI_PITCH]--;
         canUseGPSHeading = false;
     } else if (rescueState.sensor.groundSpeed < rescueState.intent.targetGroundspeed && gpsRescueAngle[AI_PITCH] < gpsRescue()->angle) {
