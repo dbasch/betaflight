@@ -52,12 +52,14 @@ typedef struct {
     int32_t maxAltitude;
     int32_t currentAltitude;
     uint16_t distanceToHome;
+    uint16_t maxDistanceToHome;
     int16_t directionToHome;
     uint16_t groundSpeed;
     float zVelocity; // Up/down movement in cm/s
     float zVelocityAvg; // Up/down average in cm/s
     float accMagnitude;
     float accMagnitudeAvg;
+    float accMagnitudeMax;
 } rescueSensorData_s;
 
 typedef struct {

@@ -207,8 +207,27 @@ void performSanityChecks()
         return;
     }
 
+    /*
+    // If we have a higher accelerometer magnitude than at any previous point in the non RTH flight, we probably crashed!
+    if (rescueState.sensor.accMagnitude > rescueState.sensor.accMagnitudeMax * 1.5) {
+        rescueState.failure = RESCUE_CRASH_DETECTED;
+    }*/
+
+
+    /*
+    // If we get more than 500 meters further than our furthest point prior to RTH, something DEFINITELY went wrong
+    if (rescueState.sensor.distanceToHome > rescueState.sensor.maxDistanceToHome + 500) {
+        rescueState.failure = RESCUE_TOO_FAR;
+    }*/
+
+    /*
+    // If we get more than 200 meters above our target altitude, something is very bad
+    if (rescueState.sensor.currentAltitude > rescueState.sensor.targetAltitude + 2000) {
+        rescueState.failure = RESCUE_TOO_HIGH;
+    }*/
+
     // Just an example, but random sanity checks.  Make sure we haven't landed or crashed, etc
-    if (rescueState.failure == RESCUE_CRASH_DETECTED) {
+    if (rescueState.failure == RESCUE_CRASH_DETECTED || rescueState.failure == RESCUE_TOO_FAR || rescueState.failure == RESCUE_TOO_HIGH) {
         rescueState.phase = RESCUE_ABORT;
     }
 }
@@ -230,12 +249,17 @@ void rescueStop()
 // Things that need to run regardless of GPS rescue mode being enabled or not
 void idleTasks()
 {
-    if (getEstimatedAltitude() > rescueState.sensor.maxAltitude) {
-        rescueState.sensor.maxAltitude = getEstimatedAltitude();
-    }
-
     gpsRescueAngle[AI_PITCH] = 0;
     gpsRescueAngle[AI_ROLL] = 0;
+
+    // Store the max altitude we see not during RTH so we know our fly-back minimum alt
+    rescueState.sensor.maxAltitude = (rescueState.sensor.currentAltitude > rescueState.sensor.maxAltitude) ? rescueState.sensor.currentAltitude : rescueState.sensor.maxAltitude;
+
+    // Store the max magnitude we see not during RTH so we have a basis for crash detection
+    rescueState.sensor.accMagnitudeMax = (rescueState.sensor.accMagnitude > rescueState.sensor.accMagnitudeMax) ? rescueState.sensor.accMagnitude : rescueState.sensor.accMagnitudeMax;
+
+    // Store the max distance to home during normal flight so we know if a flyaway is happening
+    rescueState.sensor.maxDistanceToHome = (rescueState.sensor.distanceToHome > rescueState.sensor.maxDistanceToHome) ? rescueState.sensor.distanceToHome : rescueState.sensor.maxDistanceToHome;
 
     rescueThrottle = rcCommand[THROTTLE];
 }
