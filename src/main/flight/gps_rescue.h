@@ -85,6 +85,3 @@ void performSanityChecks(void);
 void sensorUpdate(void);
 
 void rescueAttainPosition(void);
-void rescueAttainAlt(void);
-void rescueCrosstrack(void);
-void rescueAttainSpeed(void);

@@ -257,19 +257,6 @@ void idleTasks()
 
 void rescueAttainPosition()
 {
-    rescueAttainAlt();
-    rescueAttainSpeed();
-
-    if (rescueState.intent.crosstrack) {
-        rescueCrosstrack();
-    }
-}
-
-void rescueAttainAlt()
-{
-    /**
-         This method needs to get us to a safe altitude at a low velocity, and then hand off the phase to RESCUE_CROSSTRACK
-    */
     static float previousVelocityError = 0;
     static float previousAltitudeError = 0;
     static float velocityIntegral = 0;
@@ -310,13 +297,10 @@ void rescueAttainAlt()
     DEBUG_SET(DEBUG_RTH, 1, altitudeAdjustment);
     DEBUG_SET(DEBUG_RTH, 2, rescueThrottle);
     DEBUG_SET(DEBUG_RTH, 3, rescueState.sensor.zVelocityAvg);
-}
 
-void rescueAttainSpeed()
-{
-    if (!newGPSData) {
-        return;
-    }
+    /**
+        Groundspeed controller
+    */
 
     if (rescueState.sensor.groundSpeed > rescueState.intent.targetGroundspeed) {
         gpsRescueAngle[AI_PITCH]--;
@@ -325,17 +309,12 @@ void rescueAttainSpeed()
         gpsRescueAngle[AI_PITCH]++;
         canUseGPSHeading = true;
     }
-}
 
-void rescueCrosstrack()
-{
-    if (!newGPSData) {
-        return;
+    // Point to home if that is in our intent
+    if (rescueState.intent.crosstrack) {
+        setBearing(rescueState.sensor.directionToHome);
     }
-
-    setBearing(rescueState.sensor.directionToHome);
 }
-
 
 // Very similar to maghold function on betaflight/cleanflight
 void setBearing(int16_t deg)
