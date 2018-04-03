@@ -46,6 +46,7 @@ typedef struct {
     int16_t targetZVelocity;
     int32_t targetGroundspeed;
     int32_t targetBearing;
+    bool crosstrack;
 } rescueIntent_s;
 
 typedef struct {
@@ -83,6 +84,7 @@ void setBearing(int16_t deg);
 void performSanityChecks(void);
 void sensorUpdate(void);
 
+void rescueAttainPosition(void);
 void rescueAttainAlt(void);
 void rescueCrosstrack(void);
 void rescueAttainSpeed(void);

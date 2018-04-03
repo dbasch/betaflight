@@ -73,7 +73,6 @@ void updateGPSRescueState(void)
     }
 
     sensorUpdate();
-    bool traveling = false;
 
     switch (rescueState.phase) {
         case RESCUE_IDLE:
@@ -96,8 +95,7 @@ void updateGPSRescueState(void)
             rescueState.intent.targetGroundspeed = 500;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
             rescueState.intent.targetZVelocity = constrain(1000 * ((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10000), -300, 800);
-
-            traveling = true;
+            rescueState.intent.crosstrack = true;
             break;
         case RESCUE_CROSSTRACK:
             if (rescueState.sensor.distanceToHome < gpsRescue()->descentDistance) {
@@ -115,8 +113,8 @@ void updateGPSRescueState(void)
             // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
             rescueState.intent.targetGroundspeed = gpsRescue()->rescueGroundspeed;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
+            rescueState.intent.crosstrack = true;
 
-            traveling = true;
             break;
         case RESCUE_LANDING_APPROACH:
             // We are getting close to home in the XY plane, get Z where it needs to be to move to landing phase
@@ -133,7 +131,7 @@ void updateGPSRescueState(void)
                 rescueState.intent.targetAltitude = newAlt;
             }
 
-            traveling = true;
+            rescueState.intent.crosstrack = true;
             break;
         case RESCUE_LANDING:
             // We have reached the XYZ envelope to be considered at "home".  We need to land gently and check our accelerometer for abnormal data.
@@ -148,9 +146,8 @@ void updateGPSRescueState(void)
             rescueState.intent.targetZVelocity = -300;
             rescueState.intent.targetGroundspeed = 0;
             rescueState.intent.targetAltitude = 0;
+            rescueState.intent.crosstrack = false;
 
-            rescueAttainAlt();
-            rescueAttainSpeed();
             break;
         case RESCUE_COMPLETE:
             rescueStop();
@@ -161,13 +158,9 @@ void updateGPSRescueState(void)
             break;
     }
 
-    if (traveling) {
-        rescueCrosstrack();
-        rescueAttainAlt();
-        rescueAttainSpeed();
-    }
-
+    rescueAttainPosition();
     performSanityChecks();
+    
     newGPSData = false;
 
 }
@@ -260,6 +253,16 @@ void idleTasks()
     rescueState.sensor.maxDistanceToHome = (rescueState.sensor.distanceToHome > rescueState.sensor.maxDistanceToHome) ? rescueState.sensor.distanceToHome : rescueState.sensor.maxDistanceToHome;
 
     rescueThrottle = rcCommand[THROTTLE];
+}
+
+void rescueAttainPosition()
+{
+    rescueAttainAlt();
+    rescueAttainSpeed();
+
+    if (rescueState.intent.crosstrack) {
+        rescueCrosstrack();
+    }
 }
 
 void rescueAttainAlt()
