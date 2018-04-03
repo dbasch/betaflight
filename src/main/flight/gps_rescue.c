@@ -301,10 +301,10 @@ void rescueAttainPosition()
     */
 
     if (rescueState.sensor.groundSpeed > rescueState.intent.targetGroundspeed) {
-        gpsRescueAngle[AI_PITCH]--;
+        gpsRescueAngle[AI_PITCH] -=2;
         canUseGPSHeading = false;
-    } else if (rescueState.sensor.groundSpeed < rescueState.intent.targetGroundspeed && gpsRescueAngle[AI_PITCH] < gpsRescue()->angle) {
-        gpsRescueAngle[AI_PITCH]++;
+    } else if (rescueState.sensor.groundSpeed < rescueState.intent.targetGroundspeed && gpsRescueAngle[AI_PITCH] < gpsRescue()->angle * 10) {
+        gpsRescueAngle[AI_PITCH]+= 2;
         canUseGPSHeading = true;
     }
 
