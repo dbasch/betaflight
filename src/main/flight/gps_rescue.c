@@ -73,6 +73,7 @@ void updateGPSRescueState(void)
     }
 
     sensorUpdate();
+    bool traveling = false;
 
     switch (rescueState.phase) {
         case RESCUE_IDLE:
@@ -83,25 +84,20 @@ void updateGPSRescueState(void)
             if (FLIGHT_MODE(ANGLE_MODE)) {
                 rescueState.flags.previouslyAngleMode = true;
             }
-
-            rescueState.phase = RESCUE_ATTAIN_ALT;
-            break;
+            __attribute__ ((fallthrough));
         case RESCUE_ATTAIN_ALT:
             // Get to a safe altitude at a low velocity ASAP
             if (ABS(rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) < 1000) {
                 rescueState.phase = RESCUE_CROSSTRACK;
 
                 break;
-            
             }
 
             rescueState.intent.targetGroundspeed = 500;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
             rescueState.intent.targetZVelocity = constrain(1000 * ((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10000), -300, 800);
 
-            rescueCrosstrack();
-            rescueAttainSpeed();
-            rescueAttainAlt();
+            traveling = true;
             break;
         case RESCUE_CROSSTRACK:
             if (rescueState.sensor.distanceToHome < gpsRescue()->descentDistance) {
@@ -120,9 +116,7 @@ void updateGPSRescueState(void)
             rescueState.intent.targetGroundspeed = gpsRescue()->rescueGroundspeed;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
 
-            rescueCrosstrack();
-            rescueAttainAlt();
-            rescueAttainSpeed();
+            traveling = true;
             break;
         case RESCUE_LANDING_APPROACH:
             // We are getting close to home in the XY plane, get Z where it needs to be to move to landing phase
@@ -139,9 +133,7 @@ void updateGPSRescueState(void)
                 rescueState.intent.targetAltitude = newAlt;
             }
 
-            rescueCrosstrack();
-            rescueAttainAlt();
-            rescueAttainSpeed();
+            traveling = true;
             break;
         case RESCUE_LANDING:
             // We have reached the XYZ envelope to be considered at "home".  We need to land gently and check our accelerometer for abnormal data.
@@ -169,9 +161,15 @@ void updateGPSRescueState(void)
             break;
     }
 
-    performSanityChecks();
+    if (traveling) {
+        rescueCrosstrack();
+        rescueAttainAlt();
+        rescueAttainSpeed();
+    }
 
+    performSanityChecks();
     newGPSData = false;
+
 }
 
 void sensorUpdate()
