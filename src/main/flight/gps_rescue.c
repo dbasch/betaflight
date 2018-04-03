@@ -95,6 +95,7 @@ void updateGPSRescueState(void)
             rescueState.intent.targetGroundspeed = 500;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
             rescueState.intent.targetZVelocity = constrain(1000 * ((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10000), -300, 800);
+            rescueState.intent.minimumAngle = 150;
             rescueState.intent.crosstrack = true;
             break;
         case RESCUE_CROSSTRACK:
@@ -112,6 +113,7 @@ void updateGPSRescueState(void)
             rescueState.intent.targetGroundspeed = gpsRescue()->rescueGroundspeed;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
             rescueState.intent.targetZVelocity = constrain(1000 * ((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10000), -300, 300);
+            rescueState.intent.minimumAngle = 200;
             rescueState.intent.crosstrack = true;
 
             break;
@@ -129,6 +131,7 @@ void updateGPSRescueState(void)
 
             rescueState.intent.targetGroundspeed = constrain(rescueState.intent.targetGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance, 100, gpsRescue()->rescueGroundspeed);;
             rescueState.intent.targetZVelocity = -300;
+            rescueState.intent.minimumAngle = 50;
             rescueState.intent.crosstrack = true;
             break;
         case RESCUE_LANDING:
@@ -144,6 +147,7 @@ void updateGPSRescueState(void)
             rescueState.intent.targetZVelocity = -300;
             rescueState.intent.targetGroundspeed = 0;
             rescueState.intent.targetAltitude = 0;
+            rescueState.intent.minimumAngle = 0;
             rescueState.intent.crosstrack = false;
             break;
         case RESCUE_COMPLETE:
@@ -300,7 +304,7 @@ void rescueAttainPosition()
         Groundspeed controller
     */
 
-    if (rescueState.sensor.groundSpeed > rescueState.intent.targetGroundspeed) {
+    if (rescueState.sensor.groundSpeed > rescueState.intent.targetGroundspeed && (gpsRescueAngle[AI_PITCH] - 2) >= rescueState.intent.minimumAngle) {
         gpsRescueAngle[AI_PITCH] -=2;
         canUseGPSHeading = false;
     } else if (rescueState.sensor.groundSpeed < rescueState.intent.targetGroundspeed && gpsRescueAngle[AI_PITCH] < gpsRescue()->angle * 10) {
