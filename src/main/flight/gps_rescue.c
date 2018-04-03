@@ -107,12 +107,11 @@ void updateGPSRescueState(void)
                 rescueState.phase = RESCUE_ATTAIN_ALT;
             }
 
-            rescueState.intent.targetZVelocity = constrain(1000 * ((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10000), -300, 300);
-
             // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
             // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
             rescueState.intent.targetGroundspeed = gpsRescue()->rescueGroundspeed;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
+            rescueState.intent.targetZVelocity = constrain(1000 * ((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10000), -300, 300);
             rescueState.intent.crosstrack = true;
 
             break;
@@ -122,15 +121,14 @@ void updateGPSRescueState(void)
                 rescueState.phase = RESCUE_LANDING;
             }
 
-            rescueState.intent.targetGroundspeed = constrain(rescueState.intent.targetGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance, 100, gpsRescue()->rescueGroundspeed);;
-            rescueState.intent.targetZVelocity = -300;
-
             int32_t newAlt = gpsRescue()->initialAltitude * 100  * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance;
 
             if (newAlt < rescueState.intent.targetAltitude) {
                 rescueState.intent.targetAltitude = newAlt;
             }
 
+            rescueState.intent.targetGroundspeed = constrain(rescueState.intent.targetGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance, 100, gpsRescue()->rescueGroundspeed);;
+            rescueState.intent.targetZVelocity = -300;
             rescueState.intent.crosstrack = true;
             break;
         case RESCUE_LANDING:
@@ -147,7 +145,6 @@ void updateGPSRescueState(void)
             rescueState.intent.targetGroundspeed = 0;
             rescueState.intent.targetAltitude = 0;
             rescueState.intent.crosstrack = false;
-
             break;
         case RESCUE_COMPLETE:
             rescueStop();
@@ -158,11 +155,11 @@ void updateGPSRescueState(void)
             break;
     }
 
+    performSanityChecks();
+
     if (rescueState.phase != RESCUE_IDLE) {
         rescueAttainPosition();
     }
-    
-    performSanityChecks();
 
     newGPSData = false;
 
