@@ -158,9 +158,12 @@ void updateGPSRescueState(void)
             break;
     }
 
-    rescueAttainPosition();
-    performSanityChecks();
+    if (rescueState.phase != RESCUE_IDLE) {
+        rescueAttainPosition();
+    }
     
+    performSanityChecks();
+
     newGPSData = false;
 
 }
