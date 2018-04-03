@@ -244,13 +244,11 @@ void idleTasks()
     gpsRescueAngle[AI_ROLL] = 0;
 
     // Store the max altitude we see not during RTH so we know our fly-back minimum alt
-    rescueState.sensor.maxAltitude = (rescueState.sensor.currentAltitude > rescueState.sensor.maxAltitude) ? rescueState.sensor.currentAltitude : rescueState.sensor.maxAltitude;
-
+    rescueState.sensor.maxAltitude = MAX(rescueState.sensor.currentAltitude, rescueState.sensor.maxAltitude);
     // Store the max magnitude we see not during RTH so we have a basis for crash detection
-    rescueState.sensor.accMagnitudeMax = (rescueState.sensor.accMagnitude > rescueState.sensor.accMagnitudeMax) ? rescueState.sensor.accMagnitude : rescueState.sensor.accMagnitudeMax;
-
+    rescueState.sensor.accMagnitudeMax = MAX(rescueState.sensor.accMagnitude, rescueState.sensor.accMagnitudeMax);
     // Store the max distance to home during normal flight so we know if a flyaway is happening
-    rescueState.sensor.maxDistanceToHome = (rescueState.sensor.distanceToHome > rescueState.sensor.maxDistanceToHome) ? rescueState.sensor.distanceToHome : rescueState.sensor.maxDistanceToHome;
+    rescueState.sensor.maxDistanceToHome = MAX(rescueState.sensor.distanceToHome, rescueState.sensor.maxDistanceToHome);
 
     rescueThrottle = rcCommand[THROTTLE];
 }
