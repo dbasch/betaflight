@@ -330,6 +330,6 @@ void setBearing(int16_t deg)
 
     dif *= -GET_DIRECTION(rcControlsConfig()->yaw_control_reversed);
 
-    rcCommand[YAW] -= dif * (currentPidProfile->pid[PID_NAVR].P * 5) / 20;
+    rcCommand[YAW] -= dif * currentPidProfile->pid[PID_NAVR].P / 4;
 }
 
