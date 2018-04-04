@@ -229,12 +229,12 @@ PG_RESET_TEMPLATE(gpsConfig_t, gpsConfig,
 );
 
 PG_RESET_TEMPLATE(gpsRescue_t, gpsRescue,
-    .angle = 40,
-    .initialAltitude = 50,
+    .angle = 60,
+    .initialAltitude = 70,
     .descentDistance = 100,
-    .tP = 2,
-    .tI = 4,
-    .tD = 6,
+    .tP = 250,
+    .tI = 15,
+    .tD = 10,
     .hoverThrottle = 1250,
     .throttleMax = 1800
 );
