@@ -267,6 +267,18 @@ void rescueAttainPosition()
         setBearing(rescueState.sensor.directionToHome);
     }
 
+    /**
+        Groundspeed controller
+    */
+
+    if (rescueState.sensor.groundSpeed > rescueState.intent.targetGroundspeed && (gpsRescueAngle[AI_PITCH] - 2) >= rescueState.intent.minimumAngle) {
+        gpsRescueAngle[AI_PITCH] -=2;
+        canUseGPSHeading = false;
+    } else if (rescueState.sensor.groundSpeed < rescueState.intent.targetGroundspeed && gpsRescueAngle[AI_PITCH] < gpsRescue()->angle * 10) {
+        gpsRescueAngle[AI_PITCH]+= 2;
+        canUseGPSHeading = true;
+    }
+
     if (!newGPSData) {
         return;
     }
@@ -302,18 +314,6 @@ void rescueAttainPosition()
     DEBUG_SET(DEBUG_RTH, 1, altitudeAdjustment);
     DEBUG_SET(DEBUG_RTH, 2, rescueThrottle);
     DEBUG_SET(DEBUG_RTH, 3, rescueState.sensor.zVelocityAvg);
-
-    /**
-        Groundspeed controller
-    */
-
-    if (rescueState.sensor.groundSpeed > rescueState.intent.targetGroundspeed && (gpsRescueAngle[AI_PITCH] - 2) >= rescueState.intent.minimumAngle) {
-        gpsRescueAngle[AI_PITCH] -=2;
-        canUseGPSHeading = false;
-    } else if (rescueState.sensor.groundSpeed < rescueState.intent.targetGroundspeed && gpsRescueAngle[AI_PITCH] < gpsRescue()->angle * 10) {
-        gpsRescueAngle[AI_PITCH]+= 2;
-        canUseGPSHeading = true;
-    }
 }
 
 // Very similar to maghold function on betaflight/cleanflight
