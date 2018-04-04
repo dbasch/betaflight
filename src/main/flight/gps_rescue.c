@@ -293,11 +293,11 @@ void rescueAttainPosition()
     float altitudeError = (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 100; // Error in meters
 
     const int16_t velocityDerivative = velocityError - previousVelocityError;
-    velocityIntegral = constrain(velocityIntegral + velocityError, -100, 100);
+    velocityIntegral = constrain(velocityIntegral + velocityError, -50, 50);
 
     previousVelocityError = velocityError;
 
-    int16_t velocityAdjustment = gpsRescue()->vP * velocityError + gpsRescue()->vI * velocityIntegral + gpsRescue()->vD * velocityDerivative;
+    int16_t velocityAdjustment = (gpsRescue()->vP * velocityError + gpsRescue()->vI * velocityIntegral + gpsRescue()->vD * velocityDerivative) / (100 * getCosTiltAngle());
 
     /**
         Altitude PID controller
@@ -308,14 +308,19 @@ void rescueAttainPosition()
 
     previousAltitudeError = altitudeError;
 
-    int16_t altitudeAdjustment = gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative;
+    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative) / (100 * getCosTiltAngle());
 
-    rescueThrottle = constrain(gpsRescue()->throttleHover + (altitudeAdjustment + velocityAdjustment), gpsRescue()->throttleMin, gpsRescue()->throttleMax);
+    // Do not let velocity adjustment amplify the gains, only dampen
+    if (sign(velocityAdjustment) == sign(altitudeAdjustment)) {
+        velocityAdjustment = 0;
+    }
+
+    rescueThrottle = constrain(gpsRescue()->throttleHover + altitudeAdjustment + velocityAdjustment, gpsRescue()->throttleMin, gpsRescue()->throttleMax);
 
     DEBUG_SET(DEBUG_RTH, 0, velocityAdjustment);
     DEBUG_SET(DEBUG_RTH, 1, altitudeAdjustment);
     DEBUG_SET(DEBUG_RTH, 2, rescueThrottle);
-    DEBUG_SET(DEBUG_RTH, 3, rescueState.sensor.zVelocityAvg);
+    DEBUG_SET(DEBUG_RTH, 3, rescueState.intent.targetZVelocity);
 }
 
 // Very similar to maghold function on betaflight/cleanflight

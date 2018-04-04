@@ -599,12 +599,12 @@ const clivalue_t valueTable[] = {
     { "gps_rescue_initial_alt",     VAR_UINT16 | MASTER_VALUE, .config.minmax = { 20, 100 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, initialAltitude) },
     { "gps_rescue_descent_dist",    VAR_UINT16 | MASTER_VALUE, .config.minmax = { 30, 500 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, descentDistance) },
     { "gps_rescue_ground_speed",    VAR_UINT16 | MASTER_VALUE, .config.minmax = { 30, 3000 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, rescueGroundspeed) },
-    { "gps_rescue_throttle_P",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, tP) },
-    { "gps_rescue_throttle_I",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, tI) },
-    { "gps_rescue_throttle_D",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, tD) },
-    { "gps_rescue_velocity_P",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, vP) },
-    { "gps_rescue_velocity_I",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, vI) },
-    { "gps_rescue_velocity_D",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, vD) },
+    { "gps_rescue_throttle_P",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 500 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, tP) },
+    { "gps_rescue_throttle_I",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 500 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, tI) },
+    { "gps_rescue_throttle_D",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 500 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, tD) },
+    { "gps_rescue_velocity_P",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 500 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, vP) },
+    { "gps_rescue_velocity_I",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 500 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, vI) },
+    { "gps_rescue_velocity_D",   VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 500 }, PG_GPS_RESCUE, offsetof(gpsRescue_t, vD) },
 
 
 
