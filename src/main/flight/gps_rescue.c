@@ -273,9 +273,11 @@ void rescueAttainPosition()
 
     if (rescueState.sensor.groundSpeed > rescueState.intent.targetGroundspeed && (gpsRescueAngle[AI_PITCH] - 2) >= rescueState.intent.minimumAngle) {
         gpsRescueAngle[AI_PITCH] -=2;
+        gpsRescueAngle[AI_ROLL] = 0;
         canUseGPSHeading = false;
     } else if (rescueState.sensor.groundSpeed < rescueState.intent.targetGroundspeed && gpsRescueAngle[AI_PITCH] < gpsRescue()->angle * 10) {
         gpsRescueAngle[AI_PITCH]+= 2;
+        gpsRescueAngle[AI_ROLL] = 0;
         canUseGPSHeading = true;
     }
 
