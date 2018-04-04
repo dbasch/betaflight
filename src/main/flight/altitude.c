@@ -41,6 +41,7 @@
 #include "flight/altitude.h"
 #include "flight/imu.h"
 #include "flight/pid.h"
+#include "flight/gps_rescue.h"
 
 #include "io/gps.h"
 
@@ -116,22 +117,7 @@ void updateAltHoldState(void)
     }
 }
 
-void updateRangefinderAltHoldState(void)
-{
-    // Sonar alt hold activate
-    if (!IS_RC_MODE_ACTIVE(BOXRANGEFINDER)) {
-        DISABLE_FLIGHT_MODE(RANGEFINDER_MODE);
-        return;
-    }
 
-    if (!FLIGHT_MODE(RANGEFINDER_MODE)) {
-        ENABLE_FLIGHT_MODE(RANGEFINDER_MODE);
-        AltHold = estimatedAltitude;
-        initialThrottleHold = rcData[THROTTLE];
-        errorVelocityI = 0;
-        altHoldThrottleAdjustment = 0;
-    }
-}
 
 bool isThrustFacingDownwards(attitudeEulerAngles_t *attitude)
 {
@@ -297,12 +283,13 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
         estimatedAltitude = gpsAlt;
      }
 
+    if (rescueState.phase == RESCUE_IDLE) {
+        DEBUG_SET(DEBUG_RTH, 0, (int32_t)(100 * gpsTrust));
 
-     DEBUG_SET(DEBUG_ALTITUDE, 0, (int32_t)(100 * gpsTrust));
-
-     DEBUG_SET(DEBUG_ALTITUDE, 1, accAlt);
-     DEBUG_SET(DEBUG_ALTITUDE, 2, baroAlt);
-     DEBUG_SET(DEBUG_ALTITUDE, 3, gpsAlt);
+        DEBUG_SET(DEBUG_RTH, 1, accAlt);
+        DEBUG_SET(DEBUG_RTH, 2, baroAlt);
+        DEBUG_SET(DEBUG_RTH, 3, gpsAlt);
+     }
 
     // set vario
     estimatedVario = applyDeadband(vel_tmp, 5);
