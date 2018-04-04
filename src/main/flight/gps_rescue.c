@@ -264,6 +264,11 @@ void rescueAttainPosition()
     static float velocityIntegral = 0;
     static float altitudeIntegral = 0;
 
+    // Point to home if that is in our intent
+    if (rescueState.intent.crosstrack) {
+        setBearing(rescueState.sensor.directionToHome);
+    }
+
     if (!newGPSData) {
         return;
     }
@@ -310,11 +315,6 @@ void rescueAttainPosition()
     } else if (rescueState.sensor.groundSpeed < rescueState.intent.targetGroundspeed && gpsRescueAngle[AI_PITCH] < gpsRescue()->angle * 10) {
         gpsRescueAngle[AI_PITCH]+= 2;
         canUseGPSHeading = true;
-    }
-
-    // Point to home if that is in our intent
-    if (rescueState.intent.crosstrack) {
-        setBearing(rescueState.sensor.directionToHome);
     }
 }
 
