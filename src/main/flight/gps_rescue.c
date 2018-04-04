@@ -88,8 +88,6 @@ void updateGPSRescueState(void)
             // Get to a safe altitude at a low velocity ASAP
             if (ABS(rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) < 1000) {
                 rescueState.phase = RESCUE_CROSSTRACK;
-
-                break;
             }
 
             rescueState.intent.targetGroundspeed = 500;
