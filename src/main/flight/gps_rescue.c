@@ -45,6 +45,7 @@ bool          canUseGPSHeading = true; // We will expose this to the IMU so we k
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 };
 uint16_t      hoverThrottle = 0;
 float         averageThrottle = 0.0;
+float         altitudeError = 0.0;
 uint32_t      throttleSamples = 0;
 
 static bool newGPSData = false;
@@ -111,7 +112,7 @@ void updateGPSRescueState(void)
             // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
             rescueState.intent.targetGroundspeed = gpsRescue()->rescueGroundspeed;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
-            rescueState.intent.targetZVelocity = constrain(1000 * ((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10000), -300, 300);
+            rescueState.intent.targetZVelocity = constrain((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10, -300, 300);
             rescueState.intent.minimumAngle = 200;
             rescueState.intent.crosstrack = true;
 
@@ -129,7 +130,7 @@ void updateGPSRescueState(void)
             }
 
             rescueState.intent.targetGroundspeed = MAX(gpsRescue()->rescueGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance, 100);
-            rescueState.intent.targetZVelocity = -300;
+            rescueState.intent.targetZVelocity = -200;
             rescueState.intent.minimumAngle = 50;
             rescueState.intent.crosstrack = true;
             break;
@@ -143,7 +144,7 @@ void updateGPSRescueState(void)
                 rescueState.phase = RESCUE_COMPLETE;
             }
 
-            rescueState.intent.targetZVelocity = -300;
+            rescueState.intent.targetZVelocity = -100;
             rescueState.intent.targetGroundspeed = 0;
             rescueState.intent.targetAltitude = 0;
             rescueState.intent.minimumAngle = 0;
@@ -297,6 +298,11 @@ void rescueAttainPosition()
     gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] + angleGain, 10 * rescueState.intent.minimumAngle, 10 * gpsRescue()->angle);
     canUseGPSHeading = (angleGain >= 0);
 
+    if (ABS(altitudeError) > 15) {// don't dive or climb while moving super fast horizontally
+              gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH], 50, 150);
+    }
+
+
     if (!newGPSData) {
         return;
     }
@@ -306,7 +312,7 @@ void rescueAttainPosition()
     */
 
     float velocityError = (rescueState.intent.targetZVelocity - rescueState.sensor.zVelocityAvg) / 100; // Error in meters/s > 0
-    float altitudeError = (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 100; // Error in meters
+    altitudeError = (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 100; // Error in meters
 
     const int16_t velocityDerivative = velocityError - previousVelocityError;
     velocityIntegral = constrain(velocityIntegral + velocityError, -50, 50);
