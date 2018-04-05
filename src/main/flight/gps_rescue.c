@@ -44,6 +44,7 @@
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 };
 uint16_t      hoverThrottle = 0;
+float         averageThrottle = 0.0;
 uint32_t      throttleSamples = 0;
 
 static bool newGPSData = false;
@@ -261,14 +262,15 @@ void idleTasks()
 
     //to do: have a default value for hoverThrottle
     float ct = getCosTiltAngle();
-    if (ct > 0.5 && ct < 0.96) { //5 to 45 degrees tilt
+    if (ct > 0.5 && ct < 0.96 && throttleSamples < 1E8) { //5 to 45 degrees tilt
         //TO DO: only sample when acceleration is low
         uint16_t adjustedThrottle = 1000 + (rescueThrottle - 1000) * ct;
         if (throttleSamples == 0) {
-            hoverThrottle = adjustedThrottle;
+            averageThrottle = adjustedThrottle;
         } else {
-            hoverThrottle = (hoverThrottle * throttleSamples + adjustedThrottle) / (throttleSamples + 1);
+            averageThrottle += (adjustedThrottle - averageThrottle) / (throttleSamples + 1);
         }
+        hoverThrottle = lrintf(averageThrottle);
         DEBUG_SET(DEBUG_RTH, 3, hoverThrottle);
         throttleSamples++;
     }
