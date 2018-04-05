@@ -283,11 +283,9 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
         estimatedAltitude = gpsAlt;
      }
 
-    if (rescueState.phase == RESCUE_IDLE) {
-        DEBUG_SET(DEBUG_RTH, 0, (int32_t)(100 * gpsTrust));
-        DEBUG_SET(DEBUG_RTH, 1, baroAlt);
-        DEBUG_SET(DEBUG_RTH, 2, gpsAlt);
-     }
+     DEBUG_SET(DEBUG_ALTITUDE, 0, (int32_t)(100 * gpsTrust));
+     DEBUG_SET(DEBUG_ALTITUDE, 1, baroAlt);
+     DEBUG_SET(DEBUG_ALTITUDE, 2, gpsAlt);
 
     // set vario
     estimatedVario = applyDeadband(vel_tmp, 5);
