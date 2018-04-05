@@ -259,10 +259,12 @@ void idleTasks()
     rescueState.sensor.maxDistanceToHome = MAX(rescueState.sensor.distanceToHome, rescueState.sensor.maxDistanceToHome);
 
     rescueThrottle = rcCommand[THROTTLE];
+    DEBUG_SET(DEBUG_RTH, 2, rescueThrottle);
+
 
     //to do: have a default value for hoverThrottle
     float ct = getCosTiltAngle();
-    if (ct > 0.5 && ct < 0.96 && throttleSamples < 1E8) { //5 to 45 degrees tilt
+    if (ct > 0.5 && ct < 0.96 && throttleSamples < 1E8 && rescueThrottle > 1070) { //5 to 45 degrees tilt
         //TO DO: only sample when acceleration is low
         uint16_t adjustedThrottle = 1000 + (rescueThrottle - 1000) * ct;
         if (throttleSamples == 0) {
@@ -271,6 +273,8 @@ void idleTasks()
             averageThrottle += (adjustedThrottle - averageThrottle) / (throttleSamples + 1);
         }
         hoverThrottle = lrintf(averageThrottle);
+        DEBUG_SET(DEBUG_RTH, 0, (int32_t)(100 * ct));
+        DEBUG_SET(DEBUG_RTH, 1, attitude.values.pitch);
         DEBUG_SET(DEBUG_RTH, 3, hoverThrottle);
         throttleSamples++;
     }
