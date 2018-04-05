@@ -285,10 +285,8 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 
     if (rescueState.phase == RESCUE_IDLE) {
         DEBUG_SET(DEBUG_RTH, 0, (int32_t)(100 * gpsTrust));
-
-        DEBUG_SET(DEBUG_RTH, 1, accAlt);
-        DEBUG_SET(DEBUG_RTH, 2, baroAlt);
-        DEBUG_SET(DEBUG_RTH, 3, gpsAlt);
+        DEBUG_SET(DEBUG_RTH, 1, baroAlt);
+        DEBUG_SET(DEBUG_RTH, 2, gpsAlt);
      }
 
     // set vario

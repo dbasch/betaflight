@@ -43,6 +43,8 @@
 
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
 int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 };
+uint16_t      hoverThrottle = 0;
+uint32_t      throttleSamples = 0;
 
 static bool newGPSData = false;
 
@@ -79,6 +81,9 @@ void updateGPSRescueState(void)
             idleTasks();
             break;
         case RESCUE_INITIALIZE:
+            if (hoverThrottle == 0) { //no actual throttle data yet, let's use the default.
+                hoverThrottle = gpsRescue()->throttleHover;
+            }
             // Store whether we are already in angle mode, etc
             if (FLIGHT_MODE(ANGLE_MODE)) {
                 rescueState.flags.previouslyAngleMode = true;
@@ -253,6 +258,21 @@ void idleTasks()
     rescueState.sensor.maxDistanceToHome = MAX(rescueState.sensor.distanceToHome, rescueState.sensor.maxDistanceToHome);
 
     rescueThrottle = rcCommand[THROTTLE];
+
+    //to do: have a default value for hoverThrottle
+    float ct = getCosTiltAngle();
+    if (ct > 0.5 && ct < 0.96) { //5 to 45 degrees tilt
+        //TO DO: only sample when acceleration is low
+        uint16_t adjustedThrottle = 1000 + (rescueThrottle - 1000) * ct;
+        if (throttleSamples == 0) {
+            hoverThrottle = adjustedThrottle;
+        } else {
+            hoverThrottle = (hoverThrottle * throttleSamples + adjustedThrottle) / (throttleSamples + 1);
+        }
+        DEBUG_SET(DEBUG_RTH, 3, hoverThrottle);
+        throttleSamples++;
+    }
+
 }
 
 void rescueAttainPosition()
@@ -315,7 +335,7 @@ void rescueAttainPosition()
         velocityAdjustment = 0;
     }
 
-    rescueThrottle = constrain(gpsRescue()->throttleHover + altitudeAdjustment + velocityAdjustment, gpsRescue()->throttleMin, gpsRescue()->throttleMax);
+    rescueThrottle = constrain(hoverThrottle + altitudeAdjustment + velocityAdjustment, gpsRescue()->throttleMin, gpsRescue()->throttleMax);
 
     DEBUG_SET(DEBUG_RTH, 0, velocityAdjustment);
     DEBUG_SET(DEBUG_RTH, 1, altitudeAdjustment);
