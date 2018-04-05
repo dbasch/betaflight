@@ -292,16 +292,11 @@ void rescueAttainPosition()
     /**
         Groundspeed controller
     */
-
-    if (rescueState.sensor.groundSpeed > rescueState.intent.targetGroundspeed && (gpsRescueAngle[AI_PITCH] - 2) >= rescueState.intent.minimumAngle) {
-        gpsRescueAngle[AI_PITCH] -=2;
-        gpsRescueAngle[AI_ROLL] = 0;
-        canUseGPSHeading = false;
-    } else if (rescueState.sensor.groundSpeed < rescueState.intent.targetGroundspeed && gpsRescueAngle[AI_PITCH] < gpsRescue()->angle * 10) {
-        gpsRescueAngle[AI_PITCH]+= 2;
-        gpsRescueAngle[AI_ROLL] = 0;
-        canUseGPSHeading = true;
-    }
+    gpsRescueAngle[AI_ROLL] = 0;
+    int16_t speedError = rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed;
+    int16_t angleGain = constrain(speedError / 500, -5, 5);
+    gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] + angleGain, rescueState.intent.minimumAngle, gpsRescue()->angle);
+    canUseGPSHeading = (angleGain > 0);
 
     if (!newGPSData) {
         return;
