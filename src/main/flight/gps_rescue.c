@@ -107,11 +107,6 @@ void updateGPSRescueState(void)
                 rescueState.phase = RESCUE_LANDING_APPROACH;
             }
 
-            // If we are more than 10 meters below target, or we are under 20 meters during crosstrack mode, we should go back to attain altitude mode
-            if (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude > 300 || rescueState.sensor.currentAltitude < 2000) {
-                rescueState.phase = RESCUE_ATTAIN_ALT;
-            }
-
             // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
             // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
             rescueState.intent.targetGroundspeed = gpsRescue()->rescueGroundspeed;
@@ -133,7 +128,7 @@ void updateGPSRescueState(void)
                 rescueState.intent.targetAltitude = newAlt;
             }
 
-            rescueState.intent.targetGroundspeed = constrain(rescueState.intent.targetGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance, 100, gpsRescue()->rescueGroundspeed);;
+            rescueState.intent.targetGroundspeed = MAX(gpsRescue()->rescueGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance, 100);
             rescueState.intent.targetZVelocity = -300;
             rescueState.intent.minimumAngle = 50;
             rescueState.intent.crosstrack = true;
@@ -299,7 +294,7 @@ void rescueAttainPosition()
     gpsRescueAngle[AI_ROLL] = 0;
     int16_t speedError = rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed;
     int16_t angleGain = constrain(speedError / 500, -5, 5);
-    gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] + angleGain, rescueState.intent.minimumAngle, gpsRescue()->angle);
+    gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] + angleGain, 10 * rescueState.intent.minimumAngle, 10 * gpsRescue()->angle);
     canUseGPSHeading = (angleGain >= 0);
 
     if (!newGPSData) {
