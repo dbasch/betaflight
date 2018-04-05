@@ -97,10 +97,6 @@ void updateGPSRescueState(void)
 
         // Reset accelerometer status
         isDescending = false;
-
-        //DEBUG_SET(DEBUG_ALTITUDE, 1, rcCommand[THROTTLE]);
-        //DEBUG_SET(DEBUG_ALTITUDE, 2, attitude.values.pitch);
-        //DEBUG_SET(DEBUG_ALTITUDE, 3, attitude.values.roll);
         if (!initialized) {
         //configuration parameters
             highestAltitude = 0;
@@ -158,9 +154,6 @@ void updateGPSRescueState(void)
         isDescending = false;
      }
 
-
-
-    //this is another hack, version 2
     if (gpsSol.groundSpeed > targetSpeed && (gpsRescueAngle[AI_PITCH] > 5)) {
         gpsRescueAngle[AI_PITCH]--;
         canUseGPSHeading = false;
@@ -200,15 +193,8 @@ void applyGPSRescueAltitude()
     previousTimeUs = currentTimeUs;
 
     //apply PID to control variable
-    //int32_t ct = 100 * getCosTiltAngle();
     netThrottle = (tP * altitudeError + tI * integral + tD * derivative) / (100 * getCosTiltAngle()) ;
     rescueThrottle = constrain(hoverThrottle + netThrottle, hoverThrottle - 30, throttleMax);
-
-    //DEBUG_SET(DEBUG_ALTITUDE, 0, error);
-    //DEBUG_SET(DEBUG_ALTITUDE, 1, rescueThrottle);
-    //DEBUG_SET(DEBUG_ALTITUDE, 2, netThrottle);
-   // DEBUG_SET(DEBUG_ALTITUDE, 3, targetAltitude);
-
 
 }
 

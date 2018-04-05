@@ -240,6 +240,8 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
                 zgOffset = zg;
         }
         zg -= zgOffset;
+        DEBUG_SET(DEBUG_ALTITUDE, 2, (int32_t)(100 * zg));
+
 
         //integrate acceleration to get velocity
         float prevVel = velocityFromAcc;
@@ -297,11 +299,10 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 
      estimatedAltitude = gpsAlt * gpsTrust + baroAlt * (1-gpsTrust);
 
-     DEBUG_SET(DEBUG_ALTITUDE, 0, (int32_t)(100 * gpsTrust));
+     DEBUG_SET(DEBUG_ALTITUDE, 0, (int32_t)(100 * getCosTiltAngle()));
 
-     DEBUG_SET(DEBUG_ALTITUDE, 1, accAlt);
-     DEBUG_SET(DEBUG_ALTITUDE, 2, baroAlt);
-     DEBUG_SET(DEBUG_ALTITUDE, 3, gpsAlt);
+     DEBUG_SET(DEBUG_ALTITUDE, 1, rcCommand[3]);
+     DEBUG_SET(DEBUG_ALTITUDE, 3, attitude.values.pitch);
 
     // set vario
     estimatedVario = applyDeadband(vel_tmp, 5);
