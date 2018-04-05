@@ -296,7 +296,7 @@ void rescueAttainPosition()
     int16_t speedError = rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed;
     int16_t angleGain = constrain(speedError / 500, -5, 5);
     gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] + angleGain, rescueState.intent.minimumAngle, gpsRescue()->angle);
-    canUseGPSHeading = (angleGain > 0);
+    canUseGPSHeading = (angleGain >= 0);
 
     if (!newGPSData) {
         return;
