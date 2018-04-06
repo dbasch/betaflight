@@ -539,6 +539,11 @@ float getCosTiltAngle(void)
     return rMat[2][2];
 }
 
+float getSinTiltAngle(void)
+{
+    return rMat[2][1];
+}
+
 void getQuaternion(quaternion *quat)
 {
    quat->w = q.w;

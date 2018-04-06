@@ -100,8 +100,6 @@ void updateGPSRescueState(void)
 
             rescueState.intent.targetGroundspeed = 500;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
-            rescueState.intent.targetZVelocity = constrain((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10, -300, 800);
-            rescueState.intent.minimumAngle = 10;
             rescueState.intent.crosstrack = true;
             break;
         case RESCUE_CROSSTRACK:
@@ -113,8 +111,6 @@ void updateGPSRescueState(void)
             // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
             rescueState.intent.targetGroundspeed = gpsRescue()->rescueGroundspeed;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
-            rescueState.intent.targetZVelocity = constrain((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10, -300, 300);
-            rescueState.intent.minimumAngle = 15;
             rescueState.intent.crosstrack = true;
 
             break;
@@ -131,8 +127,6 @@ void updateGPSRescueState(void)
             }
 
             rescueState.intent.targetGroundspeed = MAX(gpsRescue()->rescueGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance, 100);
-            rescueState.intent.targetZVelocity = -200;
-            rescueState.intent.minimumAngle = 5;
             rescueState.intent.crosstrack = true;
             break;
         case RESCUE_LANDING:
@@ -145,10 +139,8 @@ void updateGPSRescueState(void)
                 rescueState.phase = RESCUE_COMPLETE;
             }
 
-            rescueState.intent.targetZVelocity = -100;
             rescueState.intent.targetGroundspeed = 0;
             rescueState.intent.targetAltitude = 0;
-            rescueState.intent.minimumAngle = 0;
             rescueState.intent.crosstrack = false;
             break;
         case RESCUE_COMPLETE:
@@ -280,72 +272,58 @@ void idleTasks()
 
 void rescueAttainPosition()
 {
-    static float previousVelocityError = 0;
-    static float previousAltitudeError = 0;
-    static float velocityIntegral = 0;
-    static float altitudeIntegral = 0;
-
     // Point to home if that is in our intent
     if (rescueState.intent.crosstrack) {
         setBearing(rescueState.sensor.directionToHome);
     }
 
-    /**
-        Groundspeed controller
-    */
-    gpsRescueAngle[AI_ROLL] = 0;
-    int16_t speedError = rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed;
-    int16_t angleGain = constrain(speedError / 100, -5, 5);
-    gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] + angleGain, 10 * rescueState.intent.minimumAngle, 10 * gpsRescue()->angle);
-    canUseGPSHeading = (angleGain >= 0);
-
-    if (ABS(altitudeError) > 15) {// don't dive or climb while moving super fast horizontally
-           rescueState.phase = RESCUE_ATTAIN_ALT;
-    }
-
-
     if (!newGPSData) {
         return;
     }
 
-    /**
-        Vertical velocity PID controller to dampen the changes made by the altitude PID controller
-    */
-
-    float velocityError = (rescueState.intent.targetZVelocity - rescueState.sensor.zVelocityAvg) / 100; // Error in meters/s > 0
-    altitudeError = (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 100; // Error in meters
-
-    const int16_t velocityDerivative = velocityError - previousVelocityError;
-    velocityIntegral = constrain(velocityIntegral + velocityError, -50, 50);
-
-    previousVelocityError = velocityError;
-
-    int16_t velocityAdjustment = (gpsRescue()->vP * velocityError + gpsRescue()->vI * velocityIntegral + gpsRescue()->vD * velocityDerivative) / (100 * getCosTiltAngle());
+    int16_t dThrottle = (rcCommand[THROTTLE] - 1000);
+    int16_t dThrottleVert = dThrottle * getCosTiltAngle();
+    int16_t dThrottleHor = dThrottle * getSinTiltAngle();
 
     /**
-        Altitude PID controller
+        Altitude controller
     */
+    static float previousAltitudeError = 0;
+    static float altitudeIntegral = 0;
 
+    const int16_t altitudeError = (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 100; // Error in meters
     const int16_t altitudeDerivative = altitudeError - previousAltitudeError;
+
     altitudeIntegral = constrain(altitudeIntegral + altitudeError, -50, 50);
 
     previousAltitudeError = altitudeError;
 
     int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative) / (100 * getCosTiltAngle());
 
-    // Do not let velocity adjustment amplify the gains, only dampen
-    if (sign(velocityAdjustment) == sign(altitudeAdjustment)) {
-        velocityAdjustment = 0;
-    }
+    /**
+        Speed controller
+    */
+    const int16_t speedError = (rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed) / 100;
 
-    rescueThrottle = constrain(hoverThrottle + altitudeAdjustment + velocityAdjustment, gpsRescue()->throttleMin, gpsRescue()->throttleMax);
+    int16_t speedAdjustment = speedError * gpsRescue()->vP;
+
+    /**
+        Throttle / Angle Controller
+    */
+
+    int16_t hoverAdjustment = (hoverThrottle - 1000) / getCosTiltAngle();
+    int16_t targetV = altitudeAdjustment + hoverAdjustment;
+
+    gpsRescueAngle[AI_PITCH] = RADIANS_TO_DECIDEGREES(atan2_approx(dThrottleHor, dThrottleVert));
+    gpsRescueAngle[AI_ROLL] = 0;
+
+    rescueThrottle = sqrt(sq(targetV) + sq(speedAdjustment));
 
     //DEBUG_SET(DEBUG_RTH, 0, velocityAdjustment);
-         DEBUG_SET(DEBUG_RTH, 0, rescueState.intent.targetGroundspeed);
-
+    DEBUG_SET(DEBUG_RTH, 0, rescueThrottle);
     DEBUG_SET(DEBUG_RTH, 1, gpsRescueAngle[AI_PITCH]);
-    DEBUG_SET(DEBUG_RTH, 2, rescueThrottle);
-    DEBUG_SET(DEBUG_RTH, 3, speedError);
+    DEBUG_SET(DEBUG_RTH, 2, dThrottleVert);
+    DEBUG_SET(DEBUG_RTH, 3, dThrottleHor);
 }
 
 // Very similar to maghold function on betaflight/cleanflight

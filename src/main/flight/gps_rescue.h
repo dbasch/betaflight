@@ -43,10 +43,7 @@ typedef struct {
 
 typedef struct {
     int32_t targetAltitude;
-    int16_t targetZVelocity;
     int32_t targetGroundspeed;
-    int32_t targetBearing;
-    int16_t minimumAngle;
     bool crosstrack;
 } rescueIntent_s;
 
