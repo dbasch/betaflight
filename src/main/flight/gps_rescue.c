@@ -101,7 +101,7 @@ void updateGPSRescueState(void)
             rescueState.intent.targetGroundspeed = 500;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
             rescueState.intent.targetZVelocity = constrain((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10, -300, 800);
-            rescueState.intent.minimumAngle = 150;
+            rescueState.intent.minimumAngle = 10;
             rescueState.intent.crosstrack = true;
             break;
         case RESCUE_CROSSTRACK:
@@ -114,7 +114,7 @@ void updateGPSRescueState(void)
             rescueState.intent.targetGroundspeed = gpsRescue()->rescueGroundspeed;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
             rescueState.intent.targetZVelocity = constrain((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10, -300, 300);
-            rescueState.intent.minimumAngle = 200;
+            rescueState.intent.minimumAngle = 15;
             rescueState.intent.crosstrack = true;
 
             break;
@@ -132,7 +132,7 @@ void updateGPSRescueState(void)
 
             rescueState.intent.targetGroundspeed = MAX(gpsRescue()->rescueGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance, 100);
             rescueState.intent.targetZVelocity = -200;
-            rescueState.intent.minimumAngle = 50;
+            rescueState.intent.minimumAngle = 5;
             rescueState.intent.crosstrack = true;
             break;
         case RESCUE_LANDING:
@@ -295,7 +295,7 @@ void rescueAttainPosition()
     */
     gpsRescueAngle[AI_ROLL] = 0;
     int16_t speedError = rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed;
-    int16_t angleGain = constrain(speedError / 1000, -5, 5);
+    int16_t angleGain = constrain(speedError / 100, -5, 5);
     gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] + angleGain, 10 * rescueState.intent.minimumAngle, 10 * gpsRescue()->angle);
     canUseGPSHeading = (angleGain >= 0);
 
@@ -343,9 +343,9 @@ void rescueAttainPosition()
     //DEBUG_SET(DEBUG_RTH, 0, velocityAdjustment);
          DEBUG_SET(DEBUG_RTH, 0, rescueState.intent.targetGroundspeed);
 
-    DEBUG_SET(DEBUG_RTH, 1, altitudeAdjustment);
+    DEBUG_SET(DEBUG_RTH, 1, gpsRescueAngle[AI_PITCH]);
     DEBUG_SET(DEBUG_RTH, 2, rescueThrottle);
-    DEBUG_SET(DEBUG_RTH, 3, rescueState.intent.targetZVelocity);
+    DEBUG_SET(DEBUG_RTH, 3, speedError);
 }
 
 // Very similar to maghold function on betaflight/cleanflight
