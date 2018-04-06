@@ -90,6 +90,7 @@ void updateGPSRescueState(void)
             if (FLIGHT_MODE(ANGLE_MODE)) {
                 rescueState.flags.previouslyAngleMode = true;
             }
+            rescueState.phase = RESCUE_ATTAIN_ALT;
             __attribute__ ((fallthrough));
         case RESCUE_ATTAIN_ALT:
             // Get to a safe altitude at a low velocity ASAP
@@ -99,7 +100,7 @@ void updateGPSRescueState(void)
 
             rescueState.intent.targetGroundspeed = 500;
             rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
-            rescueState.intent.targetZVelocity = constrain(1000 * ((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10000), -300, 800);
+            rescueState.intent.targetZVelocity = constrain((rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 10, -300, 800);
             rescueState.intent.minimumAngle = 150;
             rescueState.intent.crosstrack = true;
             break;
@@ -294,12 +295,12 @@ void rescueAttainPosition()
     */
     gpsRescueAngle[AI_ROLL] = 0;
     int16_t speedError = rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed;
-    int16_t angleGain = constrain(speedError / 500, -5, 5);
+    int16_t angleGain = constrain(speedError / 1000, -5, 5);
     gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] + angleGain, 10 * rescueState.intent.minimumAngle, 10 * gpsRescue()->angle);
     canUseGPSHeading = (angleGain >= 0);
 
     if (ABS(altitudeError) > 15) {// don't dive or climb while moving super fast horizontally
-              gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH], 50, 150);
+           rescueState.phase = RESCUE_ATTAIN_ALT;
     }
 
 
@@ -339,7 +340,9 @@ void rescueAttainPosition()
 
     rescueThrottle = constrain(hoverThrottle + altitudeAdjustment + velocityAdjustment, gpsRescue()->throttleMin, gpsRescue()->throttleMax);
 
-    DEBUG_SET(DEBUG_RTH, 0, velocityAdjustment);
+    //DEBUG_SET(DEBUG_RTH, 0, velocityAdjustment);
+         DEBUG_SET(DEBUG_RTH, 0, rescueState.intent.targetGroundspeed);
+
     DEBUG_SET(DEBUG_RTH, 1, altitudeAdjustment);
     DEBUG_SET(DEBUG_RTH, 2, rescueThrottle);
     DEBUG_SET(DEBUG_RTH, 3, rescueState.intent.targetZVelocity);
