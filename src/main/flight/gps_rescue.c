@@ -126,7 +126,9 @@ void updateGPSRescueState(void)
                 rescueState.intent.targetAltitude = newAlt;
             }
 
-            rescueState.intent.targetGroundspeed = MAX(gpsRescue()->rescueGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance, 100);
+            int32_t newSpeed = gpsRescue()->rescueGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance;
+            rescueState.intent.targetGroundspeed = constrain(newSpeed, 100, rescueState.intent.targetGroundspeed);
+
             rescueState.intent.crosstrack = true;
             break;
         case RESCUE_LANDING:
