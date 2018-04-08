@@ -385,7 +385,7 @@ static float pidLevel(int axis, const pidProfile_t *pidProfile, const rollAndPit
     // rcDeflection is in range [-1.0, 1.0]
     float angle = pidProfile->levelAngleLimit * getRcDeflection(axis);
 #ifdef USE_GPS
-    angle += DECIDEGREES_TO_DEGREES(gpsRescueAngle[axis] / 10);
+    angle += DECIDEGREES_TO_DEGREES(gpsRescueAngle[axis] / 100); // ANGLE IS IN CENTIDEGREES
 #endif
     angle = constrainf(angle, -pidProfile->levelAngleLimit, pidProfile->levelAngleLimit);
     const float errorAngle = angle - ((attitude.raw[axis] - angleTrim->raw[axis]) / 10.0f);
