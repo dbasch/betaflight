@@ -42,7 +42,7 @@
 #include "sensors/acceleration.h"
 
 bool          canUseGPSHeading = true; // We will expose this to the IMU so we know when to use gyro only
-int16_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 };
+int32_t       gpsRescueAngle[ANGLE_INDEX_COUNT] = { 0, 0 };
 uint16_t      hoverThrottle = 0;
 float         averageThrottle = 0.0;
 float         altitudeError = 0.0;
@@ -284,6 +284,23 @@ void rescueAttainPosition()
     }
 
     /**
+        Speed controller
+    */
+    static float previousSpeedError = 0;
+    static float speedIntegral = 0;
+
+    const int16_t speedError = (rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed) / 100;
+    const int16_t speedDerivative = speedError - previousSpeedError;
+
+    previousSpeedError = speedError;
+
+    int16_t angleAdjustment =  gpsRescue()->vP * speedError + gpsRescue()->vI * speedIntegral + gpsRescue()->vD * speedDerivative;
+
+    gpsRescueAngle[AI_PITCH] += constrain(angleAdjustment, 500, gpsRescue()->angle * 100);
+
+    float ct = cos(DECIDEGREES_TO_RADIANS(gpsRescueAngle[AI_PITCH] / 10));
+
+    /**
         Altitude controller
     */
     static float previousAltitudeError = 0;
@@ -295,36 +312,16 @@ void rescueAttainPosition()
     altitudeIntegral = constrain(altitudeIntegral + altitudeError, -50, 50);
 
     previousAltitudeError = altitudeError;
-    float ct = getCosTiltAngle();
 
-    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative) / (100 * ct);
-
-    /**
-        Speed controller
-    */
-    const float speedError = (rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed) / 100;
-
-    int16_t speedAdjustment =  constrain((hoverThrottle - 1000) + speedError * gpsRescue()->vP, 50, 1000);
-
-    /**
-        Throttle / Angle Controller
-    */
-
-    //assumption: angle can never be 90 degrees. Verify this XXX
-
+    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative) / ct;
     int16_t hoverAdjustment = (hoverThrottle - 1000) / ct;
-    int16_t targetV = constrain(altitudeAdjustment + hoverAdjustment, 50, 1000);
 
-    gpsRescueAngle[AI_PITCH] = RADIANS_TO_DECIDEGREES(atan2_approx(speedAdjustment, targetV));
-    gpsRescueAngle[AI_ROLL] = 0;
+    rescueThrottle = constrain(1000 + altitudeAdjustment + hoverAdjustment, gpsRescue()->throttleMin, gpsRescue()->throttleMax);
 
-    rescueThrottle = 1000 + lrintf(sqrt(sq(targetV) + sq(speedAdjustment)));
-
-    //DEBUG_SET(DEBUG_RTH, 0, velocityAdjustment);
     DEBUG_SET(DEBUG_RTH, 0, rescueThrottle);
     DEBUG_SET(DEBUG_RTH, 1, gpsRescueAngle[AI_PITCH]);
-    DEBUG_SET(DEBUG_RTH, 2, targetV);
-    DEBUG_SET(DEBUG_RTH, 3, speedAdjustment);
+    DEBUG_SET(DEBUG_RTH, 2, altitudeAdjustment);
+    DEBUG_SET(DEBUG_RTH, 3, angleAdjustment);
 }
 
 // Very similar to maghold function on betaflight/cleanflight
