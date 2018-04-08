@@ -281,11 +281,6 @@ void rescueAttainPosition()
         return;
     }
 
-    float ct = getCosTiltAngle();
-    int16_t dThrottle = (rcCommand[THROTTLE] - 1000);
-    int16_t dThrottleVert = dThrottle * ct;
-    int16_t dThrottleHor = dThrottle * getSinTiltAngle();
-
     /**
         Altitude controller
     */
@@ -298,6 +293,7 @@ void rescueAttainPosition()
     altitudeIntegral = constrain(altitudeIntegral + altitudeError, -50, 50);
 
     previousAltitudeError = altitudeError;
+    float ct = getCosTiltAngle();
 
     int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative) / (100 * ct);
 
@@ -313,6 +309,7 @@ void rescueAttainPosition()
     */
 
     //assumption: angle can never be 90 degrees. Verify this XXX
+
     int16_t hoverAdjustment = (hoverThrottle - 1000) / ct;
     int16_t targetV = altitudeAdjustment + hoverAdjustment;
 
@@ -324,8 +321,8 @@ void rescueAttainPosition()
     //DEBUG_SET(DEBUG_RTH, 0, velocityAdjustment);
     DEBUG_SET(DEBUG_RTH, 0, rescueThrottle);
     DEBUG_SET(DEBUG_RTH, 1, gpsRescueAngle[AI_PITCH]);
-    DEBUG_SET(DEBUG_RTH, 2, dThrottleVert);
-    DEBUG_SET(DEBUG_RTH, 3, dThrottleHor);
+    DEBUG_SET(DEBUG_RTH, 2, targetV);
+    DEBUG_SET(DEBUG_RTH, 3, speedAdjustment);
 }
 
 // Very similar to maghold function on betaflight/cleanflight
