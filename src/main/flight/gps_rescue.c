@@ -296,7 +296,7 @@ void rescueAttainPosition()
 
     int16_t angleAdjustment =  gpsRescue()->vP * speedError + gpsRescue()->vI * speedIntegral + gpsRescue()->vD * speedDerivative;
 
-    gpsRescueAngle[AI_PITCH] += constrain(angleAdjustment, 500, gpsRescue()->angle * 100);
+    gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] + angleAdjustment, 500, gpsRescue()->angle * 100);
 
     float ct = cos(DECIDEGREES_TO_RADIANS(gpsRescueAngle[AI_PITCH] / 10));
 
