@@ -302,7 +302,7 @@ void rescueAttainPosition()
     */
     const float speedError = (rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed) / 100;
 
-    int16_t speedAdjustment = speedError * gpsRescue()->vP;
+    int16_t speedAdjustment =  constrain((hoverThrottle - 1000) + speedError * gpsRescue()->vP, 50, 1000);
 
     /**
         Throttle / Angle Controller
@@ -311,9 +311,9 @@ void rescueAttainPosition()
     //assumption: angle can never be 90 degrees. Verify this XXX
 
     int16_t hoverAdjustment = (hoverThrottle - 1000) / ct;
-    int16_t targetV = altitudeAdjustment + hoverAdjustment;
+    int16_t targetV = constrain(altitudeAdjustment + hoverAdjustment, 50, 1000);
 
-    gpsRescueAngle[AI_PITCH] = RADIANS_TO_DECIDEGREES(atan2_approx(targetV, speedAdjustment));
+    gpsRescueAngle[AI_PITCH] = RADIANS_TO_DECIDEGREES(atan2_approx(speedAdjustment, targetV));
     gpsRescueAngle[AI_ROLL] = 0;
 
     rescueThrottle = 1000 + lrintf(sqrt(sq(targetV) + sq(speedAdjustment)));
