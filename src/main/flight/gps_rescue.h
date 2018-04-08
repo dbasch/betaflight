@@ -70,7 +70,7 @@ typedef struct {
 } rescueState_s;
 
 extern bool canUseGPSHeading;
-extern int32_t gpsRescueAngle[ANGLE_INDEX_COUNT]; //in decidegrees
+extern int32_t gpsRescueAngle[ANGLE_INDEX_COUNT]; //NOTE: ANGLES ARE IN CENTIDEGREES
 extern rescueState_s rescueState;
 
 void updateGPSRescueState(void);
