@@ -316,7 +316,7 @@ void rescueAttainPosition()
     int16_t hoverAdjustment = (hoverThrottle - 1000) / ct;
     int16_t targetV = altitudeAdjustment + hoverAdjustment;
 
-    gpsRescueAngle[AI_PITCH] = RADIANS_TO_DECIDEGREES(atan2_approx(dThrottleVert, dThrottleHor));
+    gpsRescueAngle[AI_PITCH] = RADIANS_TO_DECIDEGREES(atan2_approx(targetV, speedAdjustment));
     gpsRescueAngle[AI_ROLL] = 0;
 
     rescueThrottle = 1000 + lrintf(sqrt(sq(targetV) + sq(speedAdjustment)));
