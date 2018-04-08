@@ -281,8 +281,9 @@ void rescueAttainPosition()
         return;
     }
 
+    float ct = getCosTiltAngle();
     int16_t dThrottle = (rcCommand[THROTTLE] - 1000);
-    int16_t dThrottleVert = dThrottle * getCosTiltAngle();
+    int16_t dThrottleVert = dThrottle * ct;
     int16_t dThrottleHor = dThrottle * getSinTiltAngle();
 
     /**
@@ -298,12 +299,12 @@ void rescueAttainPosition()
 
     previousAltitudeError = altitudeError;
 
-    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative) / (100 * getCosTiltAngle());
+    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative) / (100 * ct);
 
     /**
         Speed controller
     */
-    const int16_t speedError = (rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed) / 100;
+    const float speedError = (rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed) / 100;
 
     int16_t speedAdjustment = speedError * gpsRescue()->vP;
 
@@ -311,13 +312,14 @@ void rescueAttainPosition()
         Throttle / Angle Controller
     */
 
-    int16_t hoverAdjustment = (hoverThrottle - 1000) / getCosTiltAngle();
+    //assumption: angle can never be 90 degrees. Verify this XXX
+    int16_t hoverAdjustment = (hoverThrottle - 1000) / ct;
     int16_t targetV = altitudeAdjustment + hoverAdjustment;
 
     gpsRescueAngle[AI_PITCH] = RADIANS_TO_DECIDEGREES(atan2_approx(dThrottleHor, dThrottleVert));
     gpsRescueAngle[AI_ROLL] = 0;
 
-    rescueThrottle = sqrt(sq(targetV) + sq(speedAdjustment));
+    rescueThrottle = lrintf(sqrt(sq(targetV) + sq(speedAdjustment)));
 
     //DEBUG_SET(DEBUG_RTH, 0, velocityAdjustment);
     DEBUG_SET(DEBUG_RTH, 0, rescueThrottle);
