@@ -348,6 +348,8 @@ void rescueAttainPosition()
     const int16_t speedError = (rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed) / 100;
     const int16_t speedDerivative = speedError - previousSpeedError;
 
+    speedIntegral = constrain(speedIntegral + speedError, -50, 50);
+
     previousSpeedError = speedError;
 
     int16_t angleAdjustment =  gpsRescue()->vP * speedError + gpsRescue()->vI * speedIntegral + gpsRescue()->vD * speedDerivative;
