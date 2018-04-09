@@ -69,6 +69,7 @@ typedef struct {
     rescueFlags_s flags;
     rescueSensorData_s sensor;
     rescueIntent_s intent;
+    bool isFailsafe;
 } rescueState_s;
 
 extern bool canUseGPSHeading;

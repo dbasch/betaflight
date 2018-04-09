@@ -76,6 +76,8 @@ void updateGPSRescueState(void)
         rescueStart();
     }
 
+    rescueState.isFailsafe = FLIGHT_MODE(FAILSAFE_MODE);
+
     sensorUpdate();
 
     switch (rescueState.phase) {
@@ -202,9 +204,9 @@ void performSanityChecks()
     }
 
     // Do not abort until each of these items is fully tested
-    //if (rescueState.failure != RESCUE_HEALTHY) {
-    //    rescueState.phase = RESCUE_ABORT;
-    //}
+    if (rescueState.failure != RESCUE_HEALTHY && rescueState.isFailsafe == true) {
+        rescueState.phase = RESCUE_ABORT;
+    }
 
     // If we have a higher accelerometer magnitude than at any previous point in the non RTH flight, we probably crashed!
     if (rescueState.sensor.accMagnitude > rescueState.sensor.accMagnitudeMax * 1.5) {
@@ -248,7 +250,7 @@ void performSanityChecks()
         previousDTH = rescueState.sensor.distanceToHome;
     }
 
-    flyawayI = constrain(flyawayI + (rescueState.sensor.distanceToHome > previousDTH) ? 1 : -1, -5, 5);
+    flyawayI = constrain(flyawayI + (rescueState.sensor.distanceToHome > previousDTH) ? 1 : -1, -10, 10);
 
     previousDTH = rescueState.sensor.distanceToHome;
 
