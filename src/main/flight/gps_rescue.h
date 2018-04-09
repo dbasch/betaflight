@@ -44,6 +44,8 @@ typedef struct {
 typedef struct {
     int32_t targetAltitude;
     int32_t targetGroundspeed;
+    uint8_t minAngle; //NOTE: ANGLES ARE IN DEGREES
+    uint8_t maxAngle; //NOTE: ANGLES ARE IN DEGREES
     bool crosstrack;
 } rescueIntent_s;
 
