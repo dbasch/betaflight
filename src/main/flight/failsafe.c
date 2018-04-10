@@ -164,7 +164,7 @@ void failsafeOnValidDataReceived(void)
 
 void failsafeOnValidDataFailed(void)
 {
-    if (!failsafeConfig()->failsafe_procedure) {
+    if (failsafeConfig()->failsafe_procedure != FAILSAFE_PROCEDURE_GPS_RESCUE) {
         setArmingDisabled(ARMING_DISABLED_RX_FAILSAFE); // To prevent arming with no RX link
         failsafeState.validRxDataFailedAt = millis();
         if ((failsafeState.validRxDataFailedAt - failsafeState.validRxDataReceivedAt) > failsafeState.rxDataFailurePeriod) {
