@@ -40,7 +40,6 @@
 #include "fc/config.h"
 #include "fc/rc_controls.h"
 #include "fc/rc_modes.h"
-#include "fc/runtime_config.h"
 
 #include "flight/failsafe.h"
 
@@ -423,11 +422,11 @@ bool rxUpdateCheck(timeUs_t currentTimeUs, timeDelta_t currentDeltaTime)
             }
 
             if (frameStatus & (RX_FRAME_FAILSAFE | RX_FRAME_DROPPED)) {
-            	// No (0%) signal
-            	setRssiUnfiltered(0, RSSI_SOURCE_FRAME_ERRORS);
+                // No (0%) signal
+                setRssiUnfiltered(0, RSSI_SOURCE_FRAME_ERRORS);
             } else {
-            	// Valid (100%) signal
-            	setRssiUnfiltered(RSSI_MAX_VALUE, RSSI_SOURCE_FRAME_ERRORS);
+                // Valid (100%) signal
+                setRssiUnfiltered(RSSI_MAX_VALUE, RSSI_SOURCE_FRAME_ERRORS);
             }
         }
 
@@ -559,9 +558,7 @@ static void detectAndApplySignalLossBehaviour(void)
             if (cmp32(currentTimeMs, rcInvalidPulsPeriod[channel]) < 0) {
                 continue;           // skip to next channel to hold channel value MAX_INVALID_PULS_TIME
             } else {
-                if (failsafeConfig()->failsafe_procedure != FAILSAFE_PROCEDURE_GPS_RESCUE) {
-                    sample = getRxfailValue(channel);   // after that apply rxfail value
-                }
+                sample = getRxfailValue(channel);   // after that apply rxfail value
                 if (channel < NON_AUX_CHANNEL_COUNT) {
                     rxFlightChannelsValid = false;
                 }
@@ -580,12 +577,9 @@ static void detectAndApplySignalLossBehaviour(void)
     } else {
         rxIsInFailsafeMode = true;
         failsafeOnValidDataFailed();
-        
-        if (failsafeConfig()->failsafe_procedure != FAILSAFE_PROCEDURE_GPS_RESCUE) {
-            for (int channel = 0; channel < rxChannelCount; channel++) {
-                rcData[channel] = getRxfailValue(channel);
-            }
-        } 
+        for (int channel = 0; channel < rxChannelCount; channel++) {
+            rcData[channel] = getRxfailValue(channel);
+        }
     }
 
 #ifdef DEBUG_RX_SIGNAL_LOSS
