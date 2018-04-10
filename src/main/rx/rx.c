@@ -585,9 +585,7 @@ static void detectAndApplySignalLossBehaviour(void)
             for (int channel = 0; channel < rxChannelCount; channel++) {
                 rcData[channel] = getRxfailValue(channel);
             }
-        } else {
-            ENABLE_FLIGHT_MODE(GPS_RESCUE_MODE);
-        }
+        } 
     }
 
 #ifdef DEBUG_RX_SIGNAL_LOSS
