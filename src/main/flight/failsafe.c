@@ -82,14 +82,12 @@ void failsafeReset(void)
     failsafeState.receivingRxDataPeriodPreset = 0;
     failsafeState.phase = FAILSAFE_IDLE;
     failsafeState.rxLinkState = FAILSAFE_RXLINK_DOWN;
-    inRescueFailsafe = false;
 }
 
 void failsafeInit(void)
 {
     failsafeState.events = 0;
     failsafeState.monitoring = false;
-    inRescueFailsafe = false;
 
     return;
 }
@@ -164,15 +162,10 @@ void failsafeOnValidDataReceived(void)
 
 void failsafeOnValidDataFailed(void)
 {
-    if (failsafeConfig()->failsafe_procedure != FAILSAFE_PROCEDURE_GPS_RESCUE) {
-        setArmingDisabled(ARMING_DISABLED_RX_FAILSAFE); // To prevent arming with no RX link
-        failsafeState.validRxDataFailedAt = millis();
-        if ((failsafeState.validRxDataFailedAt - failsafeState.validRxDataReceivedAt) > failsafeState.rxDataFailurePeriod) {
-            failsafeState.rxLinkState = FAILSAFE_RXLINK_DOWN;
-        }
-    } else {
-        DEBUG_SET(DEBUG_ALTITUDE, 0, 111);
-        ENABLE_FLIGHT_MODE(GPS_RESCUE_MODE);
+    setArmingDisabled(ARMING_DISABLED_RX_FAILSAFE); // To prevent arming with no RX link
+    failsafeState.validRxDataFailedAt = millis();
+    if ((failsafeState.validRxDataFailedAt - failsafeState.validRxDataReceivedAt) > failsafeState.rxDataFailurePeriod) {
+        failsafeState.rxLinkState = FAILSAFE_RXLINK_DOWN;
     }
 }
 
@@ -251,11 +244,6 @@ void failsafeUpdateState(void)
                             failsafeState.phase = FAILSAFE_LANDED;      // skip auto-landing procedure
                             failsafeState.receivingRxDataPeriodPreset = PERIOD_OF_3_SECONDS; // require 3 seconds of valid rxData
                             break;
-                         case FAILSAFE_PROCEDURE_GPS_RESCUE:
-                            failsafeState.phase = FAILSAFE_GPS_RESCUE;
-                            inRescueFailsafe = true;
-                            break;
-
                     }
                 }
                 reprocessState = true;
@@ -309,15 +297,9 @@ void failsafeUpdateState(void)
                 failsafeState.phase = FAILSAFE_IDLE;
                 failsafeState.active = false;
                 DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
-                inRescueFailsafe = false;
                 reprocessState = true;
                 break;
-            case FAILSAFE_GPS_RESCUE:
-              if (receivingRxData) {
-                      failsafeState.phase = FAILSAFE_RX_LOSS_RECOVERED;
-                      reprocessState = true;
-               }
-              break;
+
             default:
                 break;
         }
