@@ -61,8 +61,8 @@ const char * const debugModeNames[DEBUG_COUNT] = {
     "LIDAR_TF",
     "CORE_TEMP",
     "RUNAWAY_TAKEOFF",
+    "SDIO",
+    "CURRENT_SENSOR",
     "RTH",
     "ACCEL_STATE"
-    "SDIO",
-    "CURRENT_SENSOR"
 };
