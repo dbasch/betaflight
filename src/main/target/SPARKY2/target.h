@@ -27,12 +27,11 @@
 #define LED1_PIN                PB4
 #define LED2_PIN                PB6
 
-#define BEEPER                  PC9
+#define USE_BEEPER
+#define BEEPER_PIN              PC9
 #define BEEPER_INVERTED
 
 #define INVERTER_PIN_UART6      PC6
-
-#define USE_ESC_SENSOR
 
 // MPU9250 interrupt
 #define USE_EXTI

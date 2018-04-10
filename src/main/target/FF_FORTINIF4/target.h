@@ -27,7 +27,8 @@
 /*---------------------------------*/
 
 /*------------BEEPER---------------*/
-#define BEEPER                  PB4
+#define USE_BEEPER
+#define BEEPER_PIN              PB4
 #define BEEPER_INVERTED
 /*---------------------------------*/
 
@@ -147,7 +148,6 @@
 /*---------------------------------*/
 
 /*-------------ESCs----------------*/
-#define USE_ESC_SENSOR
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 #define USE_ESCSERIAL
 #define ESCSERIAL_TIMER_TX_PIN  PB0  // (HARDARE=0)

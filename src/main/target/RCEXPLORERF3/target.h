@@ -23,14 +23,15 @@
 #undef USE_RTC_TIME
 #undef USE_COPY_PROFILE_CMS_MENU
 #undef USE_RX_MSP
-
+#undef USE_ESC_SENSOR_INFO
 
 #define CONFIG_FASTLOOP_PREFERRED_ACC ACC_NONE
 
 #define LED0_PIN    PB4
 #define LED1_PIN    PB5
 
-#define BEEPER      PA0
+#define USE_BEEPER
+#define BEEPER_PIN  PA0
 #define BEEPER_INVERTED
 
 #define USE_EXTI

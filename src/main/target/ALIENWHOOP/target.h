@@ -48,7 +48,6 @@
 
 #define CONFIG_FASTLOOP_PREFERRED_ACC ACC_DEFAULT
 #define BRUSHED_MOTORS
-#define USE_BRUSHED_ESC_AUTODETECT
 
 /* Visual Alerts - SMD LEDs
  */
@@ -57,7 +56,8 @@
 
 /* Lost Quad Mode and Alerts - RCX03-787 Low Voltage Active Buzzer
  */
-#define BEEPER                 PA2
+#define USE_BEEPER
+#define BEEPER_PIN             PA2
 #define BEEPER_INVERTED
 
 /* Serial Peripheral Interface (SPI) - Up to 50 Mbit/s on F7

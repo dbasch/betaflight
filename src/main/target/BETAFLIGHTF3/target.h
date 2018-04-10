@@ -20,10 +20,17 @@
 
 #define TARGET_BOARD_IDENTIFIER "BFF3"
 
+// Removed to make the firmware fit into flash (in descending order of priority):
+
+#undef USE_RTC_TIME
+#undef USE_COPY_PROFILE_CMS_MENU
+#undef USE_RX_MSP
+#undef USE_ESC_SENSOR_INFO
 
 #define CONFIG_FASTLOOP_PREFERRED_ACC ACC_NONE
 
-#define BEEPER                  PC15
+#define USE_BEEPER
+#define BEEPER_PIN              PC15
 #define BEEPER_INVERTED
 
 #define ENABLE_DSHOT_DMAR       true
@@ -46,7 +53,6 @@
 #define MPU_INT_EXTI                PC13
 #define USE_EXTI
 
-#define USE_ESC_SENSOR
 #define REMAP_TIM16_DMA
 #define REMAP_TIM17_DMA
 

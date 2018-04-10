@@ -23,7 +23,8 @@
 
 
 #define LED0_PIN                PC14
-#define BEEPER                  PC15
+#define USE_BEEPER
+#define BEEPER_PIN              PC15
 #define BEEPER_INVERTED
 
 #define USE_MAG_DATA_READY_SIGNAL
@@ -102,8 +103,6 @@
 #define VBAT_ADC_PIN            PA4
 #define CURRENT_METER_ADC_PIN   PA5
 #define RSSI_ADC_PIN            PB2
-
-#define USE_ESC_SENSOR
 
 #define REMAP_TIM17_DMA
 // UART1 TX uses DMA1_Channel4, which is also used by dshot on motor 4

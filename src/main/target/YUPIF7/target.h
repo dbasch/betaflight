@@ -25,7 +25,8 @@
 //define camera control
 #define CAMERA_CONTROL_PIN      PB7
 
-#define BEEPER                  PB14
+#define USE_BEEPER
+#define BEEPER_PIN              PB14
 #define BEEPER_PWM_HZ           3150 // Beeper PWM frequency in Hz
 
 // Gyro interrupt
@@ -126,7 +127,6 @@
 #define SERIALRX_UART           SERIAL_PORT_USART6
 #define TELEMETRY_UART          SERIAL_PORT_USART1
 #define DEFAULT_FEATURES        (FEATURE_TELEMETRY | FEATURE_OSD)
-#define USE_GYRO_FAST_KALMAN
 
 // Target IO and timers
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE

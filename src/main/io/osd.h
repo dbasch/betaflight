@@ -103,6 +103,7 @@ typedef enum {
     OSD_STAT_MAX_DISTANCE,
     OSD_STAT_BLACKBOX_NUMBER,
     OSD_STAT_RTC_DATE_TIME,
+    OSD_STAT_BATTERY,
     OSD_STAT_COUNT // MUST BE LAST
 } osd_stats_e;
 
@@ -136,8 +137,12 @@ typedef enum {
     OSD_WARNING_BATTERY_WARNING   = (1 << 2),
     OSD_WARNING_BATTERY_CRITICAL  = (1 << 3),
     OSD_WARNING_VISUAL_BEEPER     = (1 << 4),
-    OSD_WARNING_CRASH_FLIP        = (1 << 5)
+    OSD_WARNING_CRASH_FLIP        = (1 << 5),
+    OSD_WARNING_ESC_FAIL          = (1 << 6)
 } osdWarningsFlags_e;
+
+#define ESC_RPM_ALARM_OFF -1
+#define ESC_TEMP_ALARM_OFF INT8_MIN
 
 typedef struct osdConfig_s {
     uint16_t item_pos[OSD_ITEM_COUNT];
@@ -155,13 +160,13 @@ typedef struct osdConfig_s {
     uint8_t ahMaxPitch;
     uint8_t ahMaxRoll;
     bool enabled_stats[OSD_STAT_COUNT];
+    int8_t esc_temp_alarm;
+    int16_t esc_rpm_alarm;
 } osdConfig_t;
-
-extern timeUs_t resumeRefreshAt;
 
 PG_DECLARE(osdConfig_t, osdConfig);
 
-extern uint32_t resumeRefreshAt;
+extern timeUs_t resumeRefreshAt;
 
 struct displayPort_s;
 void osdInit(struct displayPort_s *osdDisplayPort);

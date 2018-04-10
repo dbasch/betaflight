@@ -33,9 +33,11 @@
 #endif
 
 #ifdef LUXV2_RACE
-#define BEEPER                  PB9
+#define USE_BEEPER
+#define BEEPER_PIN              PB9
 #else
-#define BEEPER                  PB13
+#define USE_BEEPER
+#define BEEPER_PIN              PB13
 #endif
 #define BEEPER_INVERTED
 
@@ -45,8 +47,6 @@
 //#define DEBUG_MPU_DATA_READY_INTERRUPT
 #define USE_MPU_DATA_READY_SIGNAL
 #define ENSURE_MPU_DATA_READY_IS_LOW
-
-#define USE_ESC_SENSOR
 
 #define USE_SPI
 #define USE_SPI_DEVICE_1

@@ -25,7 +25,8 @@
 
 #define LED0_PIN                PB7
 
-#define BEEPER                  PC15
+#define USE_BEEPER
+#define BEEPER_PIN              PC15
 
 #define USE_EXTI
 #define MPU_INT_EXTI            PC13
@@ -42,8 +43,6 @@
 
 #define USE_FLASHFS
 #define USE_FLASH_M25P16
-
-#define USE_ESC_SENSOR
 
 #define USE_VCP
 #define USE_UART1

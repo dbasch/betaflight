@@ -79,6 +79,7 @@ extern uint8_t __config_end;
 #include "drivers/light_led.h"
 #include "drivers/camera_control.h"
 #include "drivers/vtx_common.h"
+#include "drivers/usb_msc.h"
 
 #include "fc/config.h"
 #include "fc/controlrate_profile.h"
@@ -122,6 +123,7 @@ extern uint8_t __config_end;
 #include "pg/pg.h"
 #include "pg/pg_ids.h"
 #include "pg/rx_pwm.h"
+#include "pg/usb.h"
 
 #include "rx/rx.h"
 #include "rx/spektrum.h"
@@ -379,22 +381,30 @@ static void printValuePointer(const clivalue_t *var, const void *valuePointer, b
     }
 }
 
-static bool valuePtrEqualsDefault(uint8_t type, const void *ptr, const void *ptrDefault)
+
+static bool valuePtrEqualsDefault(const clivalue_t *var, const void *ptr, const void *ptrDefault)
 {
-    bool result = false;
-    switch (type & VALUE_TYPE_MASK) {
-    case VAR_UINT8:
-        result = *(uint8_t *)ptr == *(uint8_t *)ptrDefault;
-        break;
+    bool result = true;
+    int elementCount = 1;
 
-    case VAR_INT8:
-        result = *(int8_t *)ptr == *(int8_t *)ptrDefault;
-        break;
+    if ((var->type & VALUE_MODE_MASK) == MODE_ARRAY) {
+        elementCount = var->config.array.length;
+    }
+    for (int i = 0; i < elementCount; i++) {
+        switch (var->type & VALUE_TYPE_MASK) {
+        case VAR_UINT8:
+            result = result && ((uint8_t *)ptr)[i] == ((uint8_t *)ptrDefault)[i];
+            break;
 
-    case VAR_UINT16:
-    case VAR_INT16:
-        result = *(int16_t *)ptr == *(int16_t *)ptrDefault;
-        break;
+        case VAR_INT8:
+            result = result && ((int8_t *)ptr)[i] == ((int8_t *)ptrDefault)[i];
+            break;
+
+        case VAR_UINT16:
+        case VAR_INT16:
+            result = result && ((int16_t *)ptr)[i] == ((int16_t *)ptrDefault)[i];
+            break;
+        }
     }
 
     return result;
@@ -438,7 +448,7 @@ static void dumpPgValue(const clivalue_t *value, uint8_t dumpMask)
     const char *format = "set %s = ";
     const char *defaultFormat = "#set %s = ";
     const int valueOffset = getValueOffset(value);
-    const bool equalsDefault = valuePtrEqualsDefault(value->type, pg->copy + valueOffset, pg->address + valueOffset);
+    const bool equalsDefault = valuePtrEqualsDefault(value, pg->copy + valueOffset, pg->address + valueOffset);
 
     if (((dumpMask & DO_DIFF) == 0) || !equalsDefault) {
         if (dumpMask & SHOW_DEFAULTS && !equalsDefault) {
@@ -479,11 +489,16 @@ static void cliPrintVarRange(const clivalue_t *var)
     break;
     case (MODE_LOOKUP): {
         const lookupTableEntry_t *tableEntry = &lookupTables[var->config.lookup.tableIndex];
-        cliPrint("Allowed values:");
-        for (uint32_t i = 0; i < tableEntry->valueCount ; i++) {
-            if (i > 0)
-                cliPrint(",");
-            cliPrintf(" %s", tableEntry->values[i]);
+        cliPrint("Allowed values: ");
+        bool firstEntry = true;
+        for (unsigned i = 0; i < tableEntry->valueCount; i++) {
+            if (tableEntry->values[i]) {
+                if (!firstEntry) {
+                    cliPrint(", ");
+                }
+                cliPrintf("%s", tableEntry->values[i]);
+                firstEntry = false;
+            }
         }
         cliPrintLinefeed();
     }
@@ -909,6 +924,15 @@ static void cliSerial(char *cmdline)
 }
 
 #ifndef SKIP_SERIAL_PASSTHROUGH
+#ifdef USE_PINIO
+static void cbCtrlLine(void *context, uint16_t ctrl)
+{
+    int pinioDtr = (int)(long)context;
+
+    pinioSet(pinioDtr, !(ctrl & CTRL_LINE_STATE_DTR));
+}
+#endif /* USE_PINIO */
+
 static void cliSerialPassthrough(char *cmdline)
 {
     if (isEmpty(cmdline)) {
@@ -918,6 +942,10 @@ static void cliSerialPassthrough(char *cmdline)
 
     int id = -1;
     uint32_t baud = 0;
+    bool enableBaudCb = false;
+#ifdef USE_PINIO
+    int pinioDtr = 0;
+#endif /* USE_PINIO */
     unsigned mode = 0;
     char *saveptr;
     char* tok = strtok_r(cmdline, " ", &saveptr);
@@ -937,21 +965,32 @@ static void cliSerialPassthrough(char *cmdline)
             if (strstr(tok, "tx") || strstr(tok, "TX"))
                 mode |= MODE_TX;
             break;
+#ifdef USE_PINIO
+        case 3:
+            pinioDtr = atoi(tok);
+            break;
+#endif /* USE_PINIO */
         }
         index++;
         tok = strtok_r(NULL, " ", &saveptr);
+    }
+
+    if (baud == 0) {
+        enableBaudCb = true;
     }
 
     cliPrintf("Port %d ", id);
     serialPort_t *passThroughPort;
     serialPortUsage_t *passThroughPortUsage = findSerialPortUsageByIdentifier(id);
     if (!passThroughPortUsage || passThroughPortUsage->serialPort == NULL) {
-        if (!baud) {
-            cliPrintLine("closed, specify baud.");
-            return;
+        if (enableBaudCb) {
+            // Set default baud
+            baud = 57600;
         }
-        if (!mode)
+
+        if (!mode) {
             mode = MODE_RXTX;
+        }
 
         passThroughPort = openSerialPort(id, FUNCTION_NONE, NULL, NULL,
                                          baud, mode,
@@ -960,17 +999,30 @@ static void cliSerialPassthrough(char *cmdline)
             cliPrintLine("could not be opened.");
             return;
         }
-        cliPrintf("opened, baud = %d.\r\n", baud);
+
+        if (enableBaudCb) {
+            cliPrintf("opened, default baud = %d.\r\n", baud);
+        } else {
+            cliPrintf("opened, baud = %d.\r\n", baud);
+        }
     } else {
         passThroughPort = passThroughPortUsage->serialPort;
         // If the user supplied a mode, override the port's mode, otherwise
         // leave the mode unchanged. serialPassthrough() handles one-way ports.
-        cliPrintLine("already open.");
+        // Set the baud rate if specified
+        if (baud) {
+            cliPrintf("already open, setting baud = %d.\n\r", baud);
+            serialSetBaudRate(passThroughPort, baud);
+        } else {
+            cliPrintf("already open, baud = %d.\n\r", passThroughPort->baudRate);
+        }
+
         if (mode && passThroughPort->mode != mode) {
-            cliPrintf("mode changed from %d to %d.\r\n",
+            cliPrintf("Mode changed from %d to %d.\r\n",
                    passThroughPort->mode, mode);
             serialSetMode(passThroughPort, mode);
         }
+
         // If this port has a rx callback associated we need to remove it now.
         // Otherwise no data will be pushed in the serial port buffer!
         if (passThroughPort->rxCallback) {
@@ -978,7 +1030,22 @@ static void cliSerialPassthrough(char *cmdline)
         }
     }
 
+    // If no baud rate is specified allow to be set via USB
+    if (enableBaudCb) {
+        cliPrintLine("Baud rate change over USB enabled.");
+        // Register the right side baud rate setting routine with the left side which allows setting of the UART
+        // baud rate over USB without setting it using the serialpassthrough command
+        serialSetBaudRateCb(cliPort, serialSetBaudRate, passThroughPort);
+    }
+
     cliPrintLine("Forwarding, power cycle to exit.");
+
+#ifdef USE_PINIO
+    // Register control line state callback
+    if (pinioDtr) {
+        serialSetCtrlLineStateCb(cliPort, cbCtrlLine, (void *)(intptr_t)(pinioDtr - 1));
+    }
+#endif /* USE_PINIO */
 
     serialPassthrough(cliPort, passThroughPort, NULL, NULL);
 }
@@ -2057,7 +2124,7 @@ static void cliFeature(char *cmdline)
     }
 }
 
-#ifdef BEEPER
+#ifdef USE_BEEPER
 static void printBeeper(uint8_t dumpMask, const beeperConfig_t *beeperConfig, const beeperConfig_t *beeperConfigDefault)
 {
     const uint8_t beeperCount = beeperTableEntryCount();
@@ -2279,6 +2346,17 @@ static void cliGpsPassthrough(char *cmdline)
 }
 #endif
 
+#if defined(USE_GYRO_REGISTER_DUMP) && !defined(SIMULATOR_BUILD)
+static void cliDumpGyroRegisters(char *cmdline)
+{
+    tfp_printf("# WHO_AM_I    0x%X\r\n", gyroReadRegister(MPU_RA_WHO_AM_I));
+    tfp_printf("# CONFIG      0x%X\r\n", gyroReadRegister(MPU_RA_CONFIG));
+    tfp_printf("# GYRO_CONFIG 0x%X\r\n", gyroReadRegister(MPU_RA_GYRO_CONFIG));
+    UNUSED(cmdline);
+}
+#endif
+
+
 static int parseOutputIndex(char *pch, bool allowAllEscs) {
     int outputIndex = atoi(pch);
     if ((outputIndex >= 0) && (outputIndex < getMotorCount())) {
@@ -2294,7 +2372,8 @@ static int parseOutputIndex(char *pch, bool allowAllEscs) {
     return outputIndex;
 }
 
-#ifdef USE_DSHOT
+#if defined(USE_DSHOT)
+#if defined(USE_ESC_SENSOR) && defined(USE_ESC_SENSOR_INFO)
 
 #define ESC_INFO_KISS_V1_EXPECTED_FRAME_SIZE 15
 #define ESC_INFO_KISS_V2_EXPECTED_FRAME_SIZE 21
@@ -2480,6 +2559,7 @@ static void executeEscInfoCommand(uint8_t escIndex)
 
     printEscInfo(escInfoBuffer, getNumberEscBytesRead());
 }
+#endif // USE_ESC_SENSOR && USE_ESC_SENSOR_INFO
 
 static void cliDshotProg(char *cmdline)
 {
@@ -2522,12 +2602,19 @@ static void cliDshotProg(char *cmdline)
                     if (command != DSHOT_CMD_ESC_INFO) {
                         pwmWriteDshotCommand(escIndex, getMotorCount(), command);
                     } else {
-                        if (escIndex != ALL_MOTORS) {
-                            executeEscInfoCommand(escIndex);
-                        } else {
-                            for (uint8_t i = 0; i < getMotorCount(); i++) {
-                                executeEscInfoCommand(i);
+#if defined(USE_ESC_SENSOR) && defined(USE_ESC_SENSOR_INFO)
+                        if (feature(FEATURE_ESC_SENSOR)) {
+                            if (escIndex != ALL_MOTORS) {
+                                executeEscInfoCommand(escIndex);
+                            } else {
+                                for (uint8_t i = 0; i < getMotorCount(); i++) {
+                                    executeEscInfoCommand(i);
+                                }
                             }
+                        } else
+#endif
+                        {
+                            cliPrintLine("Not supported.");
                         }
                     }
 
@@ -2550,7 +2637,7 @@ static void cliDshotProg(char *cmdline)
 
     pwmEnableMotors();
 }
-#endif
+#endif // USE_DSHOT
 
 #ifdef USE_ESCSERIAL
 static void cliEscPassthrough(char *cmdline)
@@ -2820,7 +2907,7 @@ STATIC_UNIT_TESTED void cliGet(char *cmdline)
     int matchedCommands = 0;
 
     for (uint32_t i = 0; i < valueTableEntryCount; i++) {
-        if (strstr(valueTable[i].name, cmdline)) {
+        if (strcasestr(valueTable[i].name, cmdline)) {
             val = &valueTable[i];
             cliPrintf("%s = ", valueTable[i].name);
             cliPrintVar(val, 0);
@@ -2904,7 +2991,7 @@ STATIC_UNIT_TESTED void cliSet(char *cmdline)
                         const lookupTableEntry_t *tableEntry = &lookupTables[val->config.lookup.tableIndex];
                         bool matched = false;
                         for (uint32_t tableValueIndex = 0; tableValueIndex < tableEntry->valueCount && !matched; tableValueIndex++) {
-                            matched = strcasecmp(tableEntry->values[tableValueIndex], eqptr) == 0;
+                            matched = tableEntry->values[tableValueIndex] && strcasecmp(tableEntry->values[tableValueIndex], eqptr) == 0;
 
                             if (matched) {
                                 value = tableValueIndex;
@@ -2920,59 +3007,64 @@ STATIC_UNIT_TESTED void cliSet(char *cmdline)
                         const uint8_t arrayLength = val->config.array.length;
                         char *valPtr = eqptr;
 
-                        for (int i = 0; i < arrayLength; i++) {
+                        int i = 0;
+                        while (i < arrayLength && valPtr != NULL) {
                             // skip spaces
                             valPtr = skipSpace(valPtr);
-                            // find next comma (or end of string)
-                            char *valEndPtr = strchr(valPtr, ',');
 
-                            // comma found or last item?
-                            if ((valEndPtr != NULL) || (i == arrayLength - 1)){
-                                // process substring [valPtr, valEndPtr[
-                                // note: no need to copy substrings for atoi()
-                                //       it stops at the first character that cannot be converted...
-                                switch (val->type & VALUE_TYPE_MASK) {
-                                default:
-                                case VAR_UINT8: {
+                            // process substring starting at valPtr
+                            // note: no need to copy substrings for atoi()
+                            //       it stops at the first character that cannot be converted...
+                            switch (val->type & VALUE_TYPE_MASK) {
+                            default:
+                            case VAR_UINT8:
+                                {
                                     // fetch data pointer
                                     uint8_t *data = (uint8_t *)cliGetValuePointer(val) + i;
                                     // store value
                                     *data = (uint8_t)atoi((const char*) valPtr);
-                                    }
-                                    break;
+                                }
 
-                                case VAR_INT8: {
+                                break;
+                            case VAR_INT8:
+                                {
                                     // fetch data pointer
                                     int8_t *data = (int8_t *)cliGetValuePointer(val) + i;
                                     // store value
                                     *data = (int8_t)atoi((const char*) valPtr);
-                                    }
-                                    break;
+                                }
 
-                                case VAR_UINT16: {
+                                break;
+                            case VAR_UINT16:
+                                {
                                     // fetch data pointer
                                     uint16_t *data = (uint16_t *)cliGetValuePointer(val) + i;
                                     // store value
                                     *data = (uint16_t)atoi((const char*) valPtr);
-                                    }
-                                    break;
+                                }
 
-                                case VAR_INT16: {
+                                break;
+                            case VAR_INT16:
+                                {
                                     // fetch data pointer
                                     int16_t *data = (int16_t *)cliGetValuePointer(val) + i;
                                     // store value
                                     *data = (int16_t)atoi((const char*) valPtr);
-                                    }
-                                    break;
                                 }
-                                // mark as changed
-                                valueChanged = true;
 
-                                // prepare to parse next item
-                                valPtr = valEndPtr + 1;
+                                break;
                             }
+
+                            // find next comma (or end of string)
+                            valPtr = strchr(valPtr, ',') + 1;
+
+                            i++;
                         }
                     }
+
+                    // mark as changed
+                    valueChanged = true;
+
                     break;
                 }
 
@@ -3178,7 +3270,7 @@ typedef struct {
 } cliResourceValue_t;
 
 const cliResourceValue_t resourceTable[] = {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     { OWNER_BEEPER,        PG_BEEPER_DEV_CONFIG, offsetof(beeperDevConfig_t, ioTag), 0 },
 #endif
     { OWNER_MOTOR,         PG_MOTOR_CONFIG, offsetof(motorConfig_t, dev.ioTags[0]), MAX_SUPPORTED_MOTORS },
@@ -3242,6 +3334,9 @@ const cliResourceValue_t resourceTable[] = {
 #endif
 #ifdef USE_PINIO
     { OWNER_PINIO,         PG_PINIO_CONFIG, offsetof(pinioConfig_t, ioTag), PINIO_COUNT },
+#endif
+#if defined(USE_USB_MSC)
+    { OWNER_USB_MSC_PIN,   PG_USB_CONFIG, offsetof(usbDev_t, mscButtonPin), 0 },
 #endif
 };
 
@@ -3573,7 +3668,7 @@ static void printConfig(char *cmdline, bool doDiff)
         cliPrintHashLine("feature");
         printFeature(dumpMask, &featureConfig_Copy, featureConfig());
 
-#ifdef BEEPER
+#ifdef USE_BEEPER
         cliPrintHashLine("beeper");
         printBeeper(dumpMask, &beeperConfig_Copy, beeperConfig());
 #endif
@@ -3662,6 +3757,37 @@ static void cliDiff(char *cmdline)
     printConfig(cmdline, true);
 }
 
+#ifdef USE_USB_MSC
+static void cliMsc(char *cmdline)
+{
+    UNUSED(cmdline);
+
+    if (sdcard_isFunctional()) {
+        cliPrintHashLine("restarting in mass storage mode");
+        cliPrint("\r\nRebooting");
+        bufWriterFlush(cliWriter);
+        delay(1000);
+        waitForSerialPortToFinishTransmitting(cliPort);
+        stopPwmAllMotors();
+        if (mpuResetFn) {
+            mpuResetFn();
+        }
+
+#ifdef STM32F7
+        *((__IO uint32_t*) BKPSRAM_BASE + 16) = MSC_MAGIC;
+#elif defined(STM32F4)
+        *((uint32_t *)0x2001FFF0) = MSC_MAGIC;
+#endif
+
+        __disable_irq();
+        NVIC_SystemReset();
+    } else {
+        cliPrint("\r\nSD Card not present or failed to initialize!");
+        bufWriterFlush(cliWriter);
+    }
+}
+#endif
+
 typedef struct {
     const char *name;
 #ifndef MINIMAL_CLI
@@ -3693,7 +3819,7 @@ static void cliHelp(char *cmdline);
 const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("adjrange", "configure adjustment ranges", NULL, cliAdjustmentRange),
     CLI_COMMAND_DEF("aux", "configure modes", "<index> <mode> <aux> <start> <end> <logic>", cliAux),
-#ifdef BEEPER
+#ifdef USE_BEEPER
     CLI_COMMAND_DEF("beeper", "turn on/off beeper", "list\r\n"
         "\t<+|->[name]", cliBeeper),
 #endif
@@ -3730,6 +3856,9 @@ const clicmd_t cmdTable[] = {
 #ifdef USE_GPS
     CLI_COMMAND_DEF("gpspassthrough", "passthrough gps to serial", NULL, cliGpsPassthrough),
 #endif
+#if defined(USE_GYRO_REGISTER_DUMP) && !defined(SIMULATOR_BUILD)
+    CLI_COMMAND_DEF("gyroregisters", "dump gyro config registers contents", NULL, cliDumpGyroRegisters),
+#endif
     CLI_COMMAND_DEF("help", NULL, NULL, cliHelp),
 #ifdef USE_LED_STRIP
     CLI_COMMAND_DEF("led", "configure leds", NULL, cliLed),
@@ -3761,7 +3890,7 @@ const clicmd_t cmdTable[] = {
 #endif
     CLI_COMMAND_DEF("serial", "configure serial ports", NULL, cliSerial),
 #ifndef SKIP_SERIAL_PASSTHROUGH
-    CLI_COMMAND_DEF("serialpassthrough", "passthrough serial data to port", "<id> [baud] [mode] : passthrough to serial", cliSerialPassthrough),
+    CLI_COMMAND_DEF("serialpassthrough", "passthrough serial data to port", "<id> [baud] [mode] [DTR PINIO]: passthrough to serial", cliSerialPassthrough),
 #endif
 #ifdef USE_SERVOS
     CLI_COMMAND_DEF("servo", "configure servos", NULL, cliServo),
@@ -3780,6 +3909,9 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("version", "show version", NULL, cliVersion),
 #ifdef USE_VTX_CONTROL
     CLI_COMMAND_DEF("vtx", "vtx channels on switch", NULL, cliVtx),
+#endif
+#ifdef USE_USB_MSC
+	CLI_COMMAND_DEF("msc", "switch into msc mode", NULL, cliMsc),
 #endif
 };
 

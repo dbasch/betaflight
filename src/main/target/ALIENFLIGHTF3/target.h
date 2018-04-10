@@ -26,7 +26,6 @@
 
 #define USE_HARDWARE_REVISION_DETECTION
 #define HW_PIN                  PB2
-#define USE_BRUSHED_ESC_AUTODETECT
 
 // LED's V1
 #define LED0_PIN                PB4
@@ -36,7 +35,8 @@
 #define LED0_A                  PB8
 #define LED1_A                  PB9
 
-#define BEEPER                  PA5
+#define USE_BEEPER
+#define BEEPER_PIN              PA5
 
 #define USE_EXTI
 //#define DEBUG_MPU_DATA_READY_INTERRUPT

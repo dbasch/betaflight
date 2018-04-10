@@ -23,13 +23,12 @@
 
 #define USBD_PRODUCT_STRING "KISSFCV2F7"
 
-#define USE_ESC_SENSOR
-
 #define LED0   PA8  // blue
 #define LED1   PC8 // blingbling
 #define LED1_INVERTED
 
-#define BEEPER   PC9
+#define USE_BEEPER
+#define BEEPER_PIN              PC9
 #define BEEPER_INVERTED
 
 #define MPU6000_CS_PIN          PB12

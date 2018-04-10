@@ -66,6 +66,7 @@
 #include "io/beeper.h"
 #include "io/gps.h"
 #include "io/motors.h"
+#include "io/pidaudio.h"
 #include "io/servos.h"
 #include "io/serial.h"
 #include "io/statusindicator.h"
@@ -182,6 +183,9 @@ void updateArmingStatus(void)
             unsetArmingDisabled(ARMING_DISABLED_BOOT_GRACE_TIME);
         }
 
+        // Clear the crash flip active status
+        flipOverAfterCrashMode = false;
+
         // If switch is used for arming then check it is not defaulting to on when the RX link recovers from a fault
         if (!isUsingSticksForArming()) {
             static bool hadRx = false;
@@ -282,11 +286,22 @@ void disarm(void)
         DISABLE_ARMING_FLAG(ARMED);
 
 #ifdef USE_BLACKBOX
-        if (blackboxConfig()->device) {
+        if (blackboxConfig()->device && blackboxConfig()->mode != BLACKBOX_MODE_ALWAYS_ON) { // Close the log upon disarm except when logging mode is ALWAYS ON
             blackboxFinish();
         }
 #endif
         BEEP_OFF;
+#ifdef USE_DSHOT
+        if (isMotorProtocolDshot() && isModeActivationConditionPresent(BOXFLIPOVERAFTERCRASH) && !feature(FEATURE_3D)) {
+            flipOverAfterCrashMode = false;
+            if (!feature(FEATURE_3D)) {
+                pwmDisableMotors();
+                delay(1);
+                pwmWriteDshotCommand(ALL_MOTORS, getMotorCount(), DSHOT_CMD_SPIN_DIRECTION_NORMAL);
+                pwmEnableMotors();
+            }
+        }
+#endif
         // if ARMING_DISABLED_RUNAWAY_TAKEOFF is set then we want to play it's beep pattern instead
         if (!(getArmingDisableFlags() & ARMING_DISABLED_RUNAWAY_TAKEOFF)) {
             beeper(BEEPER_DISARMING);      // emit disarm tone
@@ -827,6 +842,11 @@ static void subTaskPidController(timeUs_t currentTimeUs)
         DEBUG_SET(DEBUG_RUNAWAY_TAKEOFF, DEBUG_RUNAWAY_TAKEOFF_ACTIVATING_DELAY, DEBUG_RUNAWAY_TAKEOFF_FALSE);
     }
 #endif
+
+
+#ifdef USE_PID_AUDIO
+    pidAudioUpdate();
+#endif
 }
 
 static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
@@ -935,7 +955,7 @@ static void subTaskMotorUpdate(timeUs_t currentTimeUs)
 // Function for loop trigger
 void taskMainPidLoop(timeUs_t currentTimeUs)
 {
-    static uint8_t pidUpdateCountdown = 0;
+    static uint32_t pidUpdateCounter = 0;
 
 #if defined(SIMULATOR_BUILD) && defined(SIMULATOR_GYROPID_SYNC)
     if (lockMainPID() != 0) return;
@@ -943,16 +963,13 @@ void taskMainPidLoop(timeUs_t currentTimeUs)
 
     // DEBUG_PIDLOOP, timings for:
     // 0 - gyroUpdate()
-    // 1 - pidController()
+    // 1 - subTaskPidController()
     // 2 - subTaskMotorUpdate()
     // 3 - subTaskMainSubprocesses()
     gyroUpdate(currentTimeUs);
     DEBUG_SET(DEBUG_PIDLOOP, 0, micros() - currentTimeUs);
 
-    if (pidUpdateCountdown) {
-        pidUpdateCountdown--;
-    } else {
-        pidUpdateCountdown = pidConfig()->pid_process_denom - 1;
+    if (pidUpdateCounter++ % pidConfig()->pid_process_denom == 0) {
         subTaskPidController(currentTimeUs);
         subTaskMotorUpdate(currentTimeUs);
         subTaskMainSubprocesses(currentTimeUs);

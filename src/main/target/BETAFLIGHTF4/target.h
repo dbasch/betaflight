@@ -20,11 +20,10 @@
 #define TARGET_BOARD_IDENTIFIER "BFF4"
 #define USBD_PRODUCT_STRING     "BetaFlightF4"
 
-#define USE_ESC_SENSOR
-
 #define LED0_PIN                PB5
 
-#define BEEPER                  PB4
+#define USE_BEEPER
+#define BEEPER_PIN              PB4
 #define BEEPER_INVERTED
 
 // PC13 used as inverter select GPIO for UART2
@@ -54,6 +53,7 @@
 
 #define USE_MAG
 #define USE_MAG_HMC5883
+#define USE_MAG_QMC5883
 
 #define USE_MAX7456
 #define MAX7456_SPI_INSTANCE    SPI2

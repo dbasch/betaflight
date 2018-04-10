@@ -23,15 +23,14 @@
 
 #define SBUS_PORT_OPTIONS (SERIAL_STOPBITS_2 | SERIAL_PARITY_EVEN | SERIAL_INVERTED | SERIAL_BIDIR)
 
-#define USE_ESC_SENSOR
-
 #define USE_ESCSERIAL
 #define ESCSERIAL_TIMER_TX_PIN  PA13  // (Hardware=6, common to KISSFC & KISSCC)
 #define REMAP_TIM17_DMA
 
 #define LED0_PIN                PB1
 
-#define BEEPER                  PB13
+#define USE_BEEPER
+#define BEEPER_PIN              PB13
 #define BEEPER_INVERTED
 
 #define USE_EXTI

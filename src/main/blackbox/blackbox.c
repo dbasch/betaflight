@@ -71,12 +71,6 @@
 #include "sensors/gyro.h"
 #include "sensors/rangefinder.h"
 
-enum {
-    BLACKBOX_MODE_NORMAL = 0,
-    BLACKBOX_MODE_MOTOR_TEST,
-    BLACKBOX_MODE_ALWAYS_ON
-};
-
 #if defined(ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT)
 #define DEFAULT_BLACKBOX_DEVICE     BLACKBOX_DEVICE_FLASH
 #elif defined(ENABLE_BLACKBOX_LOGGING_ON_SDCARD_BY_DEFAULT)
@@ -88,7 +82,7 @@ enum {
 PG_REGISTER_WITH_RESET_TEMPLATE(blackboxConfig_t, blackboxConfig, PG_BLACKBOX_CONFIG, 1);
 
 PG_RESET_TEMPLATE(blackboxConfig_t, blackboxConfig,
-    .p_denom = 32,
+    .p_ratio = 32,
     .device = DEFAULT_BLACKBOX_DEVICE,
     .record_acc = 1,
     .mode = BLACKBOX_MODE_NORMAL
@@ -390,7 +384,7 @@ bool blackboxMayEditConfig(void)
 
 static bool blackboxIsOnlyLoggingIntraframes(void)
 {
-    return blackboxConfig()->p_denom == 0;
+    return blackboxConfig()->p_ratio == 0;
 }
 
 static bool testBlackboxConditionUncached(FlightLogFieldCondition condition)
@@ -448,7 +442,7 @@ static bool testBlackboxConditionUncached(FlightLogFieldCondition condition)
         return rxConfig()->rssi_channel > 0 || feature(FEATURE_RSSI_ADC);
 
     case FLIGHT_LOG_FIELD_CONDITION_NOT_LOGGING_EVERY_FRAME:
-        return blackboxConfig()->p_denom != 1;
+        return blackboxConfig()->p_ratio != 1;
 
     case FLIGHT_LOG_FIELD_CONDITION_ACC:
         return sensors(SENSOR_ACC) && blackboxConfig()->record_acc;
@@ -994,7 +988,7 @@ static void loadMainState(timeUs_t currentTimeUs)
         blackboxCurrent->axisPID_I[i] = axisPID_I[i];
         blackboxCurrent->axisPID_D[i] = axisPID_D[i];
         blackboxCurrent->gyroADC[i] = lrintf(gyro.gyroADCf[i]);
-        blackboxCurrent->accADC[i] = acc.accADC[i];
+        blackboxCurrent->accADC[i] = lrintf(acc.accADC[i]);
 #ifdef USE_MAG
         blackboxCurrent->magADC[i] = mag.magADC[i];
 #endif
@@ -1202,8 +1196,8 @@ static bool blackboxWriteSysinfo(void)
         BLACKBOX_PRINT_HEADER_LINE("Log start datetime", "%s",              blackboxGetStartDateTime(buf));
         BLACKBOX_PRINT_HEADER_LINE("Craft name", "%s",                      pilotConfig()->name);
         BLACKBOX_PRINT_HEADER_LINE("I interval", "%d",                      blackboxIInterval);
-        BLACKBOX_PRINT_HEADER_LINE("P interval", "%d/%d",                   blackboxGetRateNum(), blackboxGetRateDenom());
-        BLACKBOX_PRINT_HEADER_LINE("P denom", "%d",                         blackboxConfig()->p_denom);
+        BLACKBOX_PRINT_HEADER_LINE("P interval", "%d",                      blackboxPInterval);
+        BLACKBOX_PRINT_HEADER_LINE("P ratio", "%d",                         blackboxConfig()->p_ratio);
         BLACKBOX_PRINT_HEADER_LINE("minthrottle", "%d",                     motorConfig()->minthrottle);
         BLACKBOX_PRINT_HEADER_LINE("maxthrottle", "%d",                     motorConfig()->maxthrottle);
         BLACKBOX_PRINT_HEADER_LINE("gyro_scale","0x%x",                     castFloatBytesToInt(1.0f));
@@ -1274,8 +1268,8 @@ static bool blackboxWriteSysinfo(void)
                                                                             currentPidProfile->pid[PID_VEL].I,
                                                                             currentPidProfile->pid[PID_VEL].D);
         BLACKBOX_PRINT_HEADER_LINE("dterm_filter_type", "%d",               currentPidProfile->dterm_filter_type);
-        BLACKBOX_PRINT_HEADER_LINE("dterm_lpf_hz", "%d",                    currentPidProfile->dterm_lpf_hz);
-        BLACKBOX_PRINT_HEADER_LINE("yaw_lpf_hz", "%d",                      currentPidProfile->yaw_lpf_hz);
+        BLACKBOX_PRINT_HEADER_LINE("dterm_lowpass_hz", "%d",                    currentPidProfile->dterm_lowpass_hz);
+        BLACKBOX_PRINT_HEADER_LINE("yaw_lowpass_hz", "%d",                      currentPidProfile->yaw_lowpass_hz);
         BLACKBOX_PRINT_HEADER_LINE("dterm_notch_hz", "%d",                  currentPidProfile->dterm_notch_hz);
         BLACKBOX_PRINT_HEADER_LINE("dterm_notch_cutoff", "%d",              currentPidProfile->dterm_notch_cutoff);
         BLACKBOX_PRINT_HEADER_LINE("iterm_windup", "%d",                    currentPidProfile->itermWindupPointPercent);
@@ -1295,9 +1289,15 @@ static bool blackboxWriteSysinfo(void)
 
         BLACKBOX_PRINT_HEADER_LINE("deadband", "%d",                        rcControlsConfig()->deadband);
         BLACKBOX_PRINT_HEADER_LINE("yaw_deadband", "%d",                    rcControlsConfig()->yaw_deadband);
-        BLACKBOX_PRINT_HEADER_LINE("gyro_lpf", "%d",                        gyroConfig()->gyro_lpf);
-        BLACKBOX_PRINT_HEADER_LINE("gyro_lowpass_type", "%d",               gyroConfig()->gyro_soft_lpf_type);
-        BLACKBOX_PRINT_HEADER_LINE("gyro_lowpass_hz", "%d",                 gyroConfig()->gyro_soft_lpf_hz);
+
+        BLACKBOX_PRINT_HEADER_LINE("gyro_hardware_lpf", "%d",               gyroConfig()->gyro_hardware_lpf);
+#ifdef USE_32K_CAPABLE_GYRO
+        BLACKBOX_PRINT_HEADER_LINE("gyro_32khz_hardware_lpf", "%d",         gyroConfig()->gyro_32khz_hardware_lpf);
+#endif
+        BLACKBOX_PRINT_HEADER_LINE("gyro_lowpass_type", "%d",               gyroConfig()->gyro_lowpass_type);
+        BLACKBOX_PRINT_HEADER_LINE("gyro_lowpass_hz", "%d",                 gyroConfig()->gyro_lowpass_hz);
+        BLACKBOX_PRINT_HEADER_LINE("gyro_lowpass2_type", "%d",              gyroConfig()->gyro_lowpass2_type);
+        BLACKBOX_PRINT_HEADER_LINE("gyro_lowpass2_hz", "%d",                gyroConfig()->gyro_lowpass2_hz);
         BLACKBOX_PRINT_HEADER_LINE("gyro_notch_hz", "%d,%d",                gyroConfig()->gyro_soft_notch_hz_1,
                                                                             gyroConfig()->gyro_soft_notch_hz_2);
         BLACKBOX_PRINT_HEADER_LINE("gyro_notch_cutoff", "%d,%d",            gyroConfig()->gyro_soft_notch_cutoff_1,
@@ -1397,7 +1397,7 @@ static void blackboxCheckAndLogFlightMode(void)
 
 STATIC_UNIT_TESTED bool blackboxShouldLogPFrame(void)
 {
-    return blackboxPFrameIndex == 0 && blackboxConfig()->p_denom != 0;
+    return blackboxPFrameIndex == 0 && blackboxConfig()->p_ratio != 0;
 }
 
 STATIC_UNIT_TESTED bool blackboxShouldLogIFrame(void)
@@ -1695,14 +1695,10 @@ int blackboxCalculatePDenom(int rateNum, int rateDenom)
     return blackboxIInterval * rateNum / rateDenom;
 }
 
-uint8_t blackboxGetRateNum(void)
-{
-    return blackboxGetRateDenom() * blackboxConfig()->p_denom / blackboxIInterval;
-}
-
 uint8_t blackboxGetRateDenom(void)
 {
-    return gcd(blackboxIInterval, blackboxPInterval);
+    return blackboxPInterval;
+
 }
 
 /**
@@ -1721,14 +1717,14 @@ void blackboxInit(void)
     } else {
         blackboxIInterval = (uint16_t)(32 * 1000 / gyro.targetLooptime);
     }
-    // by default p_denom is 32 and a P-frame is written every 1ms
-    // if p_denom is zero then no P-frames are logged
-    if (blackboxConfig()->p_denom == 0) {
-        blackboxPInterval = 0; // blackboxPInterval not used when p_denom is zero, so just set it to zero
-    } else if (blackboxConfig()->p_denom > blackboxIInterval && blackboxIInterval >= 32) {
+    // by default p_ratio is 32 and a P-frame is written every 1ms
+    // if p_ratio is zero then no P-frames are logged
+    if (blackboxConfig()->p_ratio == 0) {
+        blackboxPInterval = 0; // blackboxPInterval not used when p_ratio is zero, so just set it to zero
+    } else if (blackboxConfig()->p_ratio > blackboxIInterval && blackboxIInterval >= 32) {
         blackboxPInterval = 1;
     } else {
-        blackboxPInterval = blackboxIInterval /  blackboxConfig()->p_denom;
+        blackboxPInterval = blackboxIInterval /  blackboxConfig()->p_ratio;
     }
     if (blackboxConfig()->device) {
         blackboxSetState(BLACKBOX_STATE_STOPPED);

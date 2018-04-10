@@ -56,7 +56,7 @@ void targetConfiguration(void)
 
     motorConfigMutable()->minthrottle = 1049;
 
-    gyroConfigMutable()->gyro_lpf = GYRO_LPF_188HZ;
+    gyroConfigMutable()->gyro_hardware_lpf = GYRO_HARDWARE_LPF_1KHZ_SAMPLE;
     gyroConfigMutable()->gyro_soft_lpf_hz = 100;
     gyroConfigMutable()->gyro_soft_notch_hz_1 = 0;
     gyroConfigMutable()->gyro_soft_notch_hz_2 = 0;
@@ -89,7 +89,7 @@ void targetConfiguration(void)
 
         controlRateConfig->rcRates[FD_ROLL] = 100;
         controlRateConfig->rcRates[FD_PITCH] = 100;
-        controlRateConfig->rcRate[FD_YAW] = 110;
+        controlRateConfig->rcRates[FD_YAW] = 110;
         controlRateConfig->rcExpo[FD_ROLL] = 0;
         controlRateConfig->rcExpo[FD_PITCH] = 0;
         controlRateConfig->rates[FD_ROLL] = 77;

@@ -23,8 +23,11 @@
 
 #define LED0_PIN   PB7
 #define LED1_PIN   PB14
+#define LED0_INVERTED
+#define LED1_INVERTED
 
-#define BEEPER   PA0
+#define USE_BEEPER
+#define BEEPER_PIN PA0
 #define BEEPER_INVERTED
 
 #define USE_ACC
@@ -45,6 +48,7 @@
 #define USE_MAG
 #define USE_FAKE_MAG
 #define USE_MAG_HMC5883
+#define USE_MAG_QMC5883
 #define MAG_HMC5883_ALIGN CW270_DEG_FLIP
 
 #define USE_BARO

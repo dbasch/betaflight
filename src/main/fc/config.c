@@ -342,7 +342,7 @@ void validateAndFixGyroConfig(void)
         gyroConfigMutable()->gyro_soft_notch_hz_2 = 0;
     }
 
-    if (gyroConfig()->gyro_lpf != GYRO_LPF_256HZ && gyroConfig()->gyro_lpf != GYRO_LPF_NONE) {
+    if (gyroConfig()->gyro_hardware_lpf != GYRO_HARDWARE_LPF_NORMAL && gyroConfig()->gyro_hardware_lpf != GYRO_HARDWARE_LPF_EXPERIMENTAL) {
         pidConfigMutable()->pid_process_denom = 1; // When gyro set to 1khz always set pid speed 1:1 to sampling speed
         gyroConfigMutable()->gyro_sync_denom = 1;
         gyroConfigMutable()->gyro_use_32khz = false;
@@ -373,7 +373,7 @@ void validateAndFixGyroConfig(void)
         samplingTime = 0.000125f;
         break;
     }
-    if (gyroConfig()->gyro_lpf != GYRO_LPF_256HZ && gyroConfig()->gyro_lpf != GYRO_LPF_NONE) {
+    if (gyroConfig()->gyro_hardware_lpf != GYRO_HARDWARE_LPF_NORMAL && gyroConfig()->gyro_hardware_lpf != GYRO_HARDWARE_LPF_EXPERIMENTAL) {
         switch (gyroMpuDetectionResult()->sensor) {
         case ICM_20649_SPI:
             samplingTime = 1.0f / 1100.0f;
@@ -495,7 +495,7 @@ void changePidProfile(uint8_t pidProfileIndex)
 
 void beeperOffSet(uint32_t mask)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     beeperConfigMutable()->beeper_off_flags |= mask;
 #else
     UNUSED(mask);
@@ -504,7 +504,7 @@ void beeperOffSet(uint32_t mask)
 
 void beeperOffSetAll(uint8_t beeperCount)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     beeperConfigMutable()->beeper_off_flags = (1 << beeperCount) -1;
 #else
     UNUSED(beeperCount);
@@ -513,7 +513,7 @@ void beeperOffSetAll(uint8_t beeperCount)
 
 void beeperOffClear(uint32_t mask)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     beeperConfigMutable()->beeper_off_flags &= ~(mask);
 #else
     UNUSED(mask);
@@ -522,14 +522,14 @@ void beeperOffClear(uint32_t mask)
 
 void beeperOffClearAll(void)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     beeperConfigMutable()->beeper_off_flags = 0;
 #endif
 }
 
 uint32_t getBeeperOffMask(void)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     return beeperConfig()->beeper_off_flags;
 #else
     return 0;
@@ -538,7 +538,7 @@ uint32_t getBeeperOffMask(void)
 
 void setBeeperOffMask(uint32_t mask)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     beeperConfigMutable()->beeper_off_flags = mask;
 #else
     UNUSED(mask);
@@ -547,7 +547,7 @@ void setBeeperOffMask(uint32_t mask)
 
 uint32_t getPreferredBeeperOffMask(void)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     return beeperConfig()->preferred_beeper_off_flags;
 #else
     return 0;
@@ -556,7 +556,7 @@ uint32_t getPreferredBeeperOffMask(void)
 
 void setPreferredBeeperOffMask(uint32_t mask)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     beeperConfigMutable()->preferred_beeper_off_flags = mask;
 #else
     UNUSED(mask);

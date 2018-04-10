@@ -46,11 +46,12 @@
 
 #ifdef STM32F4
 #define USE_DSHOT
-#define USE_ESC_SENSOR
 #define I2C3_OVERCLOCK true
 #define USE_GYRO_DATA_ANALYSE
 #define USE_ADC
 #define USE_ADC_INTERNAL
+#define USE_USB_CDC_HID
+#define USE_USB_MSC
 
 #if defined(STM32F40_41xxx) || defined(STM32F411xE)
 #define USE_OVERCLOCK
@@ -63,10 +64,13 @@
 #endif
 #ifdef STM32F7
 #define USE_DSHOT
-#define USE_ESC_SENSOR
 #define I2C3_OVERCLOCK true
 #define I2C4_OVERCLOCK true
 #define USE_GYRO_DATA_ANALYSE
+#define USE_OVERCLOCK
+#define USE_ADC_INTERNAL
+#define USE_USB_CDC_HID
+#define USE_USB_MSC
 #endif
 
 #if defined(STM32F4) || defined(STM32F7)
@@ -99,8 +103,14 @@
 #define FAST_RAM
 #endif // USE_FAST_RAM
 
+#ifdef STM32F4
+// Data in RAM which is guaranteed to not be reset on hot reboot
+#define PERSISTENT __attribute__ ((section(".persistent_data"), aligned(4)))
+#endif
 
+#define USE_BRUSHED_ESC_AUTODETECT  // Detect if brushed motors are connected and set defaults appropriately to avoid motors spinning on boot
 #define USE_CLI
+#define USE_GYRO_REGISTER_DUMP  // Adds gyroregisters command to cli to dump configured register values
 #define USE_PPM
 #define USE_PWM
 #define USE_SERIAL_RX
@@ -111,6 +121,8 @@
 #define USE_SERIALRX_SUMD       // Graupner Hott protocol
 #define USE_SERIALRX_SUMH       // Graupner legacy protocol
 #define USE_SERIALRX_XBUS       // JR
+
+
 
 #if (FLASH_SIZE > 64)
 #define MAX_PROFILE_COUNT 3
@@ -135,6 +147,7 @@
 #define USE_CAMERA_CONTROL
 #define USE_CMS
 #define USE_COPY_PROFILE_CMS_MENU
+#define USE_EXTENDED_CMS_MENUS
 #define USE_DSHOT_DMAR
 #define USE_GYRO_OVERFLOW_CHECK
 #define USE_HUFFMAN
@@ -155,7 +168,9 @@
 #define USE_VTX_CONTROL
 #define USE_VTX_SMARTAUDIO
 #define USE_VTX_TRAMP
-#define USE_GYRO_BIQUAD_RC_FIR2
+#define USE_GYRO_LPF2
+#define USE_ESC_SENSOR
+#define USE_ESC_SENSOR_INFO
 
 #ifdef USE_SERIALRX_SPEKTRUM
 #define USE_SPEKTRUM_BIND

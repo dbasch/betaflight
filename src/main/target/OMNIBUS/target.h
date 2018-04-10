@@ -20,7 +20,7 @@
 // Removed to make the firmware fit into flash (in descending order of priority):
 #undef USE_DSHOT_DMAR           // OMNIBUS (F3) does not benefit from burst Dshot
 #undef USE_GYRO_OVERFLOW_CHECK
-#undef USE_GYRO_BIQUAD_RC_FIR2
+#undef USE_GYRO_LPF2
 
 #undef USE_SERIALRX_XBUS
 #undef USE_TELEMETRY_LTM
@@ -29,6 +29,7 @@
 #undef USE_RTC_TIME
 #undef USE_COPY_PROFILE_CMS_MENU
 #undef USE_RX_MSP
+#undef USE_ESC_SENSOR_INFO
 
 
 #define TARGET_BOARD_IDENTIFIER "OMNI" // https://en.wikipedia.org/wiki/Omnibus
@@ -37,7 +38,8 @@
 
 #define LED0_PIN                PB3
 
-#define BEEPER                  PC15
+#define USE_BEEPER
+#define BEEPER_PIN              PC15
 #define BEEPER_INVERTED
 
 #define USE_EXTI
@@ -137,8 +139,6 @@
 #define SDCARD_SPI_INITIALIZATION_CLOCK_DIVIDER 128
 // Divide to under 25MHz for normal operation:
 #define SDCARD_SPI_FULL_SPEED_CLOCK_DIVIDER     2
-
-#define USE_ESC_SENSOR
 
 // DSHOT output 4 uses DMA1_Channel5, so don't use it for the SDCARD until we find an alternative
 #ifndef USE_DSHOT

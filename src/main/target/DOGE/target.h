@@ -29,7 +29,8 @@
 // tqfp48 pin 38
 #define LED2_PIN                PA15
 
-#define BEEPER                  PB2
+#define USE_BEEPER
+#define BEEPER_PIN              PB2
 #define BEEPER_INVERTED
 
 #define USE_SPI
@@ -123,8 +124,6 @@
 //#define DEBUG_MPU_DATA_READY_INTERRUPT
 #define USE_MPU_DATA_READY_SIGNAL
 #define ENSURE_MPU_DATA_READY_IS_LOW
-
-#define USE_ESC_SENSOR
 
 #define DEFAULT_RX_FEATURE      FEATURE_RX_PPM
 

@@ -25,7 +25,8 @@
 #define LED0_PIN                PB5 // Blue LEDs - PB5
 //#define LED1_PIN                PB9 // Green LEDs - PB9
 
-#define BEEPER                  PA0
+#define USE_BEEPER
+#define BEEPER_PIN              PA0
 #define BEEPER_INVERTED
 
 // MPU6050 interrupts
@@ -95,8 +96,6 @@
 #define VBAT_ADC_PIN            PA5
 //#define CURRENT_METER_ADC_PIN   PA5
 #define RSSI_ADC_PIN            PB2
-
-#define USE_ESC_SENSOR
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 

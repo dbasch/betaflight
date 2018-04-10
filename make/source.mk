@@ -11,9 +11,11 @@ COMMON_SRC = \
             common/huffman.c \
             common/huffman_table.c \
             common/maths.c \
+            common/explog_approx.c \
             common/printf.c \
             common/streambuf.c \
             common/string_light.c \
+            common/strtol.c \
             common/time.c \
             common/typeconversion.c \
             config/config_eeprom.c \
@@ -45,7 +47,6 @@ COMMON_SRC = \
             drivers/stack_check.c \
             drivers/system.c \
             drivers/timer.c \
-            drivers/transponder_ir.c \
             drivers/transponder_ir_arcitimer.c \
             drivers/transponder_ir_ilap.c \
             drivers/transponder_ir_erlt.c \
@@ -56,6 +57,8 @@ COMMON_SRC = \
             fc/runtime_config.c \
             interface/msp.c \
             interface/msp_box.c \
+            interface/tramp_protocol.c \
+            interface/smartaudio_protocol.c \
             io/beeper.c \
             io/piniobox.c \
             io/serial.c \
@@ -75,6 +78,7 @@ COMMON_SRC = \
             pg/rx_pwm.c \
             pg/sdcard.c \
             pg/vcd.c \
+            pg/usb.c \
             scheduler/scheduler.c \
             sensors/adcinternal.c \
             sensors/battery.c \
@@ -172,6 +176,7 @@ FC_SRC = \
             io/gps.c \
             io/ledstrip.c \
             io/osd.c \
+            io/pidaudio.c \
             sensors/barometer.c \
             sensors/rangefinder.c \
             telemetry/telemetry.c \
@@ -283,17 +288,20 @@ SIZE_OPTIMISED_SRC := $(SIZE_OPTIMISED_SRC) \
             drivers/compass/compass_ak8975.c \
             drivers/compass/compass_fake.c \
             drivers/compass/compass_hmc5883l.c \
+            drivers/compass/compass_qmc5883l.c \
             drivers/display_ug2864hsweg01.c \
             drivers/inverter.c \
             drivers/light_ws2811strip.c \
             drivers/light_ws2811strip_hal.c \
+            drivers/light_ws2811strip_stdperiph.c \
             drivers/serial_escserial.c \
             drivers/serial_pinconfig.c \
             drivers/serial_tcp.c \
             drivers/serial_uart_init.c \
             drivers/serial_uart_pinconfig.c \
             drivers/serial_usb_vcp.c \
-            drivers/transponder_ir.c \
+            drivers/transponder_ir_io_hal.c \
+            drivers/transponder_ir_io_stdperiph.c \
             drivers/vtx_rtc6705_soft_spi.c \
             drivers/vtx_rtc6705.c \
             drivers/vtx_common.c \
@@ -379,11 +387,26 @@ SRC += \
             drivers/sdcard.c \
             drivers/sdcard_standard.c \
             io/asyncfatfs/asyncfatfs.c \
-            io/asyncfatfs/fat_standard.c
+            io/asyncfatfs/fat_standard.c \
+            $(MSC_SRC)
+endif
+
+ifneq ($(filter SDIO,$(FEATURES)),)
+SRC += \
+            drivers/sdcard_sdio_baremetal.c \
+            drivers/sdcard_standard.c \
+            io/asyncfatfs/asyncfatfs.c \
+            io/asyncfatfs/fat_standard.c \
+            pg/sdio.c \
+            $(MSC_SRC)
 endif
 
 ifneq ($(filter VCP,$(FEATURES)),)
 SRC += $(VCP_SRC)
+endif
+
+ifneq ($(filter MSC,$(FEATURES)),)
+SRC += $(MSC_SRC)
 endif
 # end target specific make file checks
 

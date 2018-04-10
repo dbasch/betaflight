@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include <math.h>
 
 #include "platform.h"
 
@@ -70,6 +71,9 @@
 #include "drivers/usb_io.h"
 #include "drivers/vtx_rtc6705.h"
 #include "drivers/vtx_common.h"
+#ifdef USE_USB_MSC
+#include "drivers/usb_msc.h"
+#endif
 
 #include "fc/config.h"
 #include "fc/fc_init.h"
@@ -114,6 +118,7 @@
 #include "io/transponder_ir.h"
 #include "io/osd.h"
 #include "io/osd_slave.h"
+#include "io/pidaudio.h"
 #include "io/piniobox.h"
 #include "io/displayport_msp.h"
 #include "io/vtx.h"
@@ -195,52 +200,58 @@ static IO_t busSwitchResetPin        = IO_NONE;
 
 void spiPreInit(void)
 {
-#ifdef USE_ACC_SPI_MPU6000
+#ifdef GYRO_1_CS_PIN
+    spiPreInitCs(IO_TAG(GYRO_1_CS_PIN));
+#endif
+#ifdef GYRO_2_CS_PIN
+    spiPreInitCs(IO_TAG(GYRO_2_CS_PIN));
+#endif
+#ifdef MPU6000_CS_PIN
     spiPreInitCs(IO_TAG(MPU6000_CS_PIN));
 #endif
-#ifdef USE_ACC_SPI_MPU6500
+#ifdef MPU6500_CS_PIN
     spiPreInitCs(IO_TAG(MPU6500_CS_PIN));
 #endif
-#ifdef USE_GYRO_SPI_MPU9250
+#ifdef MPU9250_CS_PIN
     spiPreInitCs(IO_TAG(MPU9250_CS_PIN));
 #endif
-#ifdef USE_GYRO_SPI_ICM20649
+#ifdef ICM20649_CS_PIN
     spiPreInitCs(IO_TAG(ICM20649_CS_PIN));
 #endif
-#ifdef USE_GYRO_SPI_ICM20689
+#ifdef ICM20689_CS_PIN
     spiPreInitCs(IO_TAG(ICM20689_CS_PIN));
 #endif
-#ifdef USE_ACCGYRO_BMI160
+#ifdef BMI160_CS_PIN
     spiPreInitCs(IO_TAG(BMI160_CS_PIN));
 #endif
-#ifdef USE_GYRO_L3GD20
+#ifdef L3GD20_CS_PIN
     spiPreInitCs(IO_TAG(L3GD20_CS_PIN));
 #endif
-#ifdef USE_MAX7456
+#ifdef MAX7456_SPI_CS_PIN
     spiPreInitCsOutPU(IO_TAG(MAX7456_SPI_CS_PIN)); // XXX 3.2 workaround for Kakute F4. See comment for spiPreInitCSOutPU.
 #endif
-#ifdef USE_SDCARD 
+#ifdef USE_SDCARD
     spiPreInitCs(sdcardConfig()->chipSelectTag);
 #endif
-#ifdef USE_BARO_SPI_BMP280
+#ifdef BMP280_CS_PIN
     spiPreInitCs(IO_TAG(BMP280_CS_PIN));
 #endif
-#ifdef USE_BARO_SPI_MS5611
+#ifdef MS5611_CS_PIN
     spiPreInitCs(IO_TAG(MS5611_CS_PIN));
 #endif
-#ifdef USE_BARO_SPI_LPS
+#ifdef LPS_CS_PIN
     spiPreInitCs(IO_TAG(LPS_CS_PIN));
 #endif
-#ifdef USE_MAG_SPI_HMC5883
+#ifdef HMC5883_CS_PIN
     spiPreInitCs(IO_TAG(HMC5883_CS_PIN));
 #endif
-#ifdef USE_MAG_SPI_AK8963
+#ifdef AK8963_CS_PIN
     spiPreInitCs(IO_TAG(AK8963_CS_PIN));
 #endif
-#if defined(USE_VTX_RTC6705)
+#if defined(RTC6705_CS_PIN) && !defined(USE_VTX_RTC6705_SOFTSPI) // RTC6705 soft SPI initialisation handled elsewhere.
     spiPreInitCs(IO_TAG(RTC6705_CS_PIN));
 #endif
-#ifdef USE_FLASH_M25P16
+#ifdef M25P16_CS_PIN
     spiPreInitCs(IO_TAG(M25P16_CS_PIN));
 #endif
 #if defined(USE_RX_SPI) && !defined(USE_RX_SOFTSPI)
@@ -410,7 +421,7 @@ void init(void)
     }
 #endif
 
-#ifdef BEEPER
+#ifdef USE_BEEPER
     beeperInit(beeperDevConfig());
 #endif
 /* temp until PGs are implemented. */
@@ -441,6 +452,19 @@ void init(void)
     spiInit(SPIDEV_4);
 #endif
 #endif // USE_SPI
+
+#ifdef USE_USB_MSC
+/* MSC mode will start after init, but will not allow scheduler to run,
+ *  so there is no bottleneck in reading and writing data */
+    mscInit();
+    if (mscCheckBoot() || mscCheckButton()) {
+        if (mscStart() == 0) {
+             mscWaitForButton();
+        } else {
+             NVIC_SystemReset();
+        }
+    }
+#endif
 
 #ifdef USE_I2C
     i2cHardwareConfigure(i2cConfig());
@@ -514,6 +538,10 @@ void init(void)
     validateAndFixGyroConfig();
     pidInit(currentPidProfile);
     accInitFilters();
+
+#ifdef USE_PID_AUDIO
+    pidAudioInit();
+#endif
 
 #ifdef USE_SERVOS
     servosInit();
@@ -609,7 +637,7 @@ void init(void)
     }
 #endif
 
-#if defined(USE_CMS) && defined(USE_SPEKTRUM_CMS_TELEMETRY)
+#if defined(USE_CMS) && defined(USE_SPEKTRUM_CMS_TELEMETRY) && defined(USE_TELEMETRY_SRXL)
     // Register the srxl Textgen telemetry sensor as a displayport device
     cmsDisplayPortRegister(displayPortSrxlInit());
 #endif

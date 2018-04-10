@@ -21,14 +21,14 @@
 
 #define USE_HARDWARE_REVISION_DETECTION
 #define HW_PIN                  PC13
-#define USE_BRUSHED_ESC_AUTODETECT
 
 #define USBD_PRODUCT_STRING "AlienFlight F4"
 
 #define LED0_PIN                PC12
 #define LED1_PIN                PD2
 
-#define BEEPER                  PC13
+#define USE_BEEPER
+#define BEEPER_PIN              PC13
 #define BEEPER_INVERTED
 
 #define INVERTER_PIN_UART2      PC15
@@ -53,6 +53,7 @@
 
 #define USE_MAG
 #define USE_MAG_HMC5883
+#define USE_MAG_QMC5883
 #define USE_MAG_AK8963
 
 #define MAG_AK8963_ALIGN        CW180_DEG_FLIP

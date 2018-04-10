@@ -31,7 +31,8 @@
 
 #define LED0_PIN                PC14
 
-#define BEEPER                  PC15
+#define USE_BEEPER
+#define BEEPER_PIN              PC15
 #define BEEPER_INVERTED
 
 #define USE_EXTI
@@ -165,7 +166,6 @@
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 
-#define USE_ESC_SENSOR
 #define REMAP_TIM17_DMA
 
 #define TARGET_IO_PORTA         0xffff

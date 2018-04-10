@@ -64,6 +64,9 @@
 
 #include "flight/altitude.h"
 #include "flight/imu.h"
+#ifdef USE_ESC_SENSOR
+#include "flight/mixer.h"
+#endif
 #include "flight/pid.h"
 
 #include "io/asyncfatfs/asyncfatfs.h"
@@ -116,7 +119,6 @@ static uint32_t blinkBits[(OSD_ITEM_COUNT + 31)/32];
 #define IS_MID(X) (rcData[X] > 1250 && rcData[X] < 1750)
 
 static timeUs_t flyTime = 0;
-static uint8_t statRssi;
 
 typedef struct statistic_s {
     timeUs_t armed_time;
@@ -124,7 +126,7 @@ typedef struct statistic_s {
     int16_t min_voltage; // /10
     int16_t max_current; // /10
     int16_t min_rssi;
-    int16_t max_altitude;
+    int32_t max_altitude;
     int16_t max_distance;
 } statistic_t;
 
@@ -134,11 +136,12 @@ timeUs_t resumeRefreshAt = 0;
 #define REFRESH_1S    1000 * 1000
 
 static uint8_t armState;
+static bool lastArmState;
 
 static displayPort_t *osdDisplayPort;
 
 #ifdef USE_ESC_SENSOR
-static escSensorData_t *escData;
+static escSensorData_t *escDataCombined;
 #endif
 
 #define AH_SYMBOL_COUNT 9
@@ -319,7 +322,7 @@ STATIC_UNIT_TESTED void osdFormatTime(char * buff, osd_timer_precision_e precisi
     }
 }
 
-STATIC_UNIT_TESTED void osdFormatTimer(char *buff, bool showSymbol, int timerIndex)
+STATIC_UNIT_TESTED void osdFormatTimer(char *buff, bool showSymbol, bool usePrecision, int timerIndex)
 {
     const uint16_t timer = osdConfig()->timers[timerIndex];
     const uint8_t src = OSD_TIMER_SRC(timer);
@@ -328,7 +331,7 @@ STATIC_UNIT_TESTED void osdFormatTimer(char *buff, bool showSymbol, int timerInd
         *(buff++) = osdGetTimerSymbol(src);
     }
 
-    osdFormatTime(buff, OSD_TIMER_PRECISION(timer), osdGetTimerValue(src));
+    osdFormatTime(buff, (usePrecision ? OSD_TIMER_PRECISION(timer) : OSD_TIMER_PREC_SECOND), osdGetTimerValue(src));
 }
 
 #ifdef USE_GPS
@@ -387,8 +390,7 @@ static bool osdDrawSingleElement(uint8_t item)
 
     uint8_t elemPosX = OSD_X(osdConfig()->item_pos[item]);
     uint8_t elemPosY = OSD_Y(osdConfig()->item_pos[item]);
-    uint8_t elemOffsetX = 0;
-    char buff[OSD_ELEMENT_BUFFER_LENGTH];
+    char buff[OSD_ELEMENT_BUFFER_LENGTH] = "";
 
     switch (item) {
     case OSD_RSSI_VALUE:
@@ -480,7 +482,7 @@ static bool osdDrawSingleElement(uint8_t item)
 
     case OSD_ITEM_TIMER_1:
     case OSD_ITEM_TIMER_2:
-        osdFormatTimer(buff, true, item - OSD_ITEM_TIMER_1);
+        osdFormatTimer(buff, true, true, item - OSD_ITEM_TIMER_1);
         break;
 
     case OSD_REMAINING_TIME_ESTIMATE:
@@ -500,27 +502,24 @@ static bool osdDrawSingleElement(uint8_t item)
 
     case OSD_FLYMODE:
         {
-            char *p = "ACRO";
-
-            if (isAirmodeActive()) {
-                p = "AIR ";
-            }
-
             if (FLIGHT_MODE(FAILSAFE_MODE)) {
-                p = "!FS!";
+                strcpy(buff, "!FS!");
             } else if (FLIGHT_MODE(ANGLE_MODE)) {
-                p = "STAB";
+                strcpy(buff, "STAB");
             } else if (FLIGHT_MODE(HORIZON_MODE)) {
-                p = "HOR ";
+                strcpy(buff, "HOR ");
+            } else if (isAirmodeActive()) {
+                strcpy(buff, "AIR ");
+            } else {
+                strcpy(buff, "ACRO");
             }
             //this is a hack, XXX diego
             if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
-                p = "RESC";
+                strcpy(buff, "RESC");
             }
 
 
-            displayWrite(osdDisplayPort, elemPosX, elemPosY, p);
-            return true;
+            break;
         }
 
     case OSD_CRAFT_NAME:
@@ -559,17 +558,12 @@ static bool osdDrawSingleElement(uint8_t item)
             if (vtxDevice && vtxSettingsConfig()->lowPowerDisarm) {
                 vtxCommonGetPowerIndex(vtxDevice, &vtxPower);
             }
-            tfp_sprintf(buff, "%c:%s:%2d", vtxBandLetter, vtxChannelName, vtxPower);
+            tfp_sprintf(buff, "%c:%s:%1d", vtxBandLetter, vtxChannelName, vtxPower);
             break;
         }
 #endif
 
     case OSD_CROSSHAIRS:
-        elemPosX = 14 - 1; // Offset for 1 char to the left
-        elemPosY = 6;
-        if (displayScreenSize(osdDisplayPort) == VIDEO_BUFFER_CHARS_PAL) {
-            ++elemPosY;
-        }
         buff[0] = SYM_AH_CENTER_LINE;
         buff[1] = SYM_AH_CENTER;
         buff[2] = SYM_AH_CENTER_LINE_RIGHT;
@@ -578,12 +572,6 @@ static bool osdDrawSingleElement(uint8_t item)
 
     case OSD_ARTIFICIAL_HORIZON:
         {
-            elemPosX = 14;
-            elemPosY = 6 - 4; // Top center of the AH area
-            if (displayScreenSize(osdDisplayPort) == VIDEO_BUFFER_CHARS_PAL) {
-                ++elemPosY;
-            }
-
             // Get pitch and roll limits in tenths of degrees
             const int maxPitch = osdConfig()->ahMaxPitch * 10;
             const int maxRoll = osdConfig()->ahMaxRoll * 10;
@@ -600,19 +588,11 @@ static bool osdDrawSingleElement(uint8_t item)
                 }
             }
 
-            osdDrawSingleElement(OSD_HORIZON_SIDEBARS);
-
             return true;
         }
 
     case OSD_HORIZON_SIDEBARS:
         {
-            elemPosX = 14;
-            elemPosY = 6;
-            if (displayScreenSize(osdDisplayPort) == VIDEO_BUFFER_CHARS_PAL) {
-                ++elemPosY;
-            }
-
             // Draw AH sides
             const int8_t hudwidth = AH_SIDEBAR_WIDTH_POS;
             const int8_t hudheight = AH_SIDEBAR_HEIGHT_POS;
@@ -654,6 +634,8 @@ static bool osdDrawSingleElement(uint8_t item)
 #define OSD_WARNINGS_MAX_SIZE 11
 #define OSD_FORMAT_MESSAGE_BUFFER_SIZE (OSD_WARNINGS_MAX_SIZE + 1)
 
+            STATIC_ASSERT(OSD_FORMAT_MESSAGE_BUFFER_SIZE <= sizeof(buff), osd_warnings_size_exceeds_buffer_size);
+
             const uint16_t enabledWarnings = osdConfig()->enabledWarnings;
 
             const batteryState_e batteryState = getBatteryState();
@@ -694,6 +676,40 @@ static bool osdDrawSingleElement(uint8_t item)
                 break;
             }
 
+#ifdef USE_ESC_SENSOR
+            // Show warning if we lose motor output or the ESC is overheating
+            if (feature(FEATURE_ESC_SENSOR) && enabledWarnings & OSD_WARNING_ESC_FAIL) {
+                char escErrMsg[OSD_FORMAT_MESSAGE_BUFFER_SIZE];
+                unsigned pos = 0;
+                
+                const char *title = "ESC";
+
+                // center justify message
+                while (pos < (OSD_WARNINGS_MAX_SIZE - (strlen(title) + getMotorCount())) / 2) {
+                    escErrMsg[pos++] = ' ';
+                }
+
+                strcpy(escErrMsg + pos, title);
+                pos += strlen(title);
+
+                unsigned i = 0;
+                while (i < getMotorCount() && pos < OSD_FORMAT_MESSAGE_BUFFER_SIZE - 1) {
+                    escSensorData_t *escData = getEscSensorData(i);
+                    const bool escWarning = (ARMING_FLAG(ARMED) && osdConfig()->esc_rpm_alarm != ESC_RPM_ALARM_OFF && escData->rpm <= osdConfig()->esc_rpm_alarm) ||
+                        (osdConfig()->esc_temp_alarm != ESC_TEMP_ALARM_OFF && escData->temperature >= osdConfig()->esc_temp_alarm);
+
+                    escErrMsg[pos++] = escWarning ? '1' + i : ' ';
+
+                    i++;
+                }
+
+                escErrMsg[pos] = '\0';
+
+                osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, escErrMsg);
+                break;
+            }
+#endif
+
             // Visual beeper
             if (enabledWarnings & OSD_WARNING_VISUAL_BEEPER && showVisualBeeper) {
                 osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, "  * * * *");
@@ -733,7 +749,7 @@ static bool osdDrawSingleElement(uint8_t item)
             const float value = constrain(batteryConfig()->batteryCapacity - getMAhDrawn(), 0, batteryConfig()->batteryCapacity);
 
             // Calculate mAh used progress
-            const uint8_t mAhUsedProgress = ceil((value / (batteryConfig()->batteryCapacity / MAIN_BATT_USAGE_STEPS)));
+            const uint8_t mAhUsedProgress = ceilf((value / (batteryConfig()->batteryCapacity / MAIN_BATT_USAGE_STEPS)));
 
             // Create empty battery indicator bar
             buff[0] = SYM_PB_START;
@@ -752,7 +768,9 @@ static bool osdDrawSingleElement(uint8_t item)
         if (!ARMING_FLAG(ARMED)) {
             tfp_sprintf(buff, "DISARMED");
         } else {
-            tfp_sprintf(buff, "        ");
+            if (!lastArmState) {  // previously disarmed - blank out the message one time
+                tfp_sprintf(buff, "        ");
+            }
         }
         break;
 
@@ -773,11 +791,15 @@ static bool osdDrawSingleElement(uint8_t item)
 
 #ifdef USE_ESC_SENSOR
     case OSD_ESC_TMP:
-        tfp_sprintf(buff, "%3d%c", osdConvertTemperatureToSelectedUnit(escData->temperature * 10) / 10, osdGetTemperatureSymbolForSelectedUnit());
+        if (feature(FEATURE_ESC_SENSOR)) {
+            tfp_sprintf(buff, "%3d%c", osdConvertTemperatureToSelectedUnit(escDataCombined->temperature * 10) / 10, osdGetTemperatureSymbolForSelectedUnit());
+        }
         break;
 
     case OSD_ESC_RPM:
-        tfp_sprintf(buff, "%5d", escData == NULL ? 0 : escData->rpm);
+        if (feature(FEATURE_ESC_SENSOR)) {
+            tfp_sprintf(buff, "%5d", escDataCombined == NULL ? 0 : escDataCombined->rpm);
+        }
         break;
 #endif
 
@@ -803,7 +825,7 @@ static bool osdDrawSingleElement(uint8_t item)
         return false;
     }
 
-    displayWrite(osdDisplayPort, elemPosX + elemOffsetX, elemPosY, buff);
+    displayWrite(osdDisplayPort, elemPosX, elemPosY, buff);
 
     return true;
 }
@@ -824,6 +846,7 @@ static void osdDrawElements(void)
     osdDrawSingleElement(OSD_MAIN_BATT_VOLTAGE);
     osdDrawSingleElement(OSD_RSSI_VALUE);
     osdDrawSingleElement(OSD_CROSSHAIRS);
+    osdDrawSingleElement(OSD_HORIZON_SIDEBARS);
     osdDrawSingleElement(OSD_ITEM_TIMER_1);
     osdDrawSingleElement(OSD_ITEM_TIMER_2);
     osdDrawSingleElement(OSD_REMAINING_TIME_ESTIMATE);
@@ -891,6 +914,11 @@ void pgResetFn_osdConfig(osdConfig_t *osdConfig)
     // Always enable warnings elements by default
     osdConfig->item_pos[OSD_WARNINGS] = OSD_POS(9, 10) | VISIBLE_FLAG;
 
+    // Default to old fixed positions for these elements
+    osdConfig->item_pos[OSD_CROSSHAIRS]         = OSD_POS(13, 6);
+    osdConfig->item_pos[OSD_ARTIFICIAL_HORIZON] = OSD_POS(14, 2);
+    osdConfig->item_pos[OSD_HORIZON_SIDEBARS]   = OSD_POS(14, 6);
+
     osdConfig->enabled_stats[OSD_STAT_MAX_SPEED]       = true;
     osdConfig->enabled_stats[OSD_STAT_MIN_BATTERY]     = true;
     osdConfig->enabled_stats[OSD_STAT_MIN_RSSI]        = true;
@@ -904,6 +932,7 @@ void pgResetFn_osdConfig(osdConfig_t *osdConfig)
     osdConfig->enabled_stats[OSD_STAT_TIMER_1]         = false;
     osdConfig->enabled_stats[OSD_STAT_TIMER_2]         = true;
     osdConfig->enabled_stats[OSD_STAT_RTC_DATE_TIME]   = false;
+    osdConfig->enabled_stats[OSD_STAT_BATTERY]         = false;
 
     osdConfig->units = OSD_UNIT_METRIC;
 
@@ -916,6 +945,8 @@ void pgResetFn_osdConfig(osdConfig_t *osdConfig)
     osdConfig->rssi_alarm = 20;
     osdConfig->cap_alarm  = 2200;
     osdConfig->alt_alarm  = 100; // meters or feet depend on configuration
+    osdConfig->esc_temp_alarm = ESC_TEMP_ALARM_OFF; // off by default
+    osdConfig->esc_rpm_alarm = ESC_RPM_ALARM_OFF; // off by default
 
     osdConfig->ahMaxPitch = 20; // 20 degrees
     osdConfig->ahMaxRoll = 40; // 40 degrees
@@ -981,7 +1012,7 @@ void osdUpdateAlarms(void)
 
     int32_t alt = osdGetMetersToSelectedUnit(getEstimatedAltitude()) / 100;
 
-    if (statRssi < osdConfig()->rssi_alarm) {
+    if (scaleRange(getRssi(), 0, 1024, 0, 100) < osdConfig()->rssi_alarm) {
         SET_BLINK(OSD_RSSI_VALUE);
     } else {
         CLR_BLINK(OSD_RSSI_VALUE);
@@ -1029,6 +1060,17 @@ void osdUpdateAlarms(void)
     } else {
         CLR_BLINK(OSD_ALTITUDE);
     }
+
+#ifdef USE_ESC_SENSOR
+    if (feature(FEATURE_ESC_SENSOR)) {
+        // This works because the combined ESC data contains the maximum temperature seen amongst all ESCs
+        if (osdConfig()->esc_temp_alarm != ESC_TEMP_ALARM_OFF && escDataCombined->temperature >= osdConfig()->esc_temp_alarm) {
+            SET_BLINK(OSD_ESC_TMP);
+        } else {
+            CLR_BLINK(OSD_ESC_TMP);
+        }
+    }
+#endif
 }
 
 void osdResetAlarms(void)
@@ -1044,6 +1086,7 @@ void osdResetAlarms(void)
     CLR_BLINK(OSD_ITEM_TIMER_1);
     CLR_BLINK(OSD_ITEM_TIMER_2);
     CLR_BLINK(OSD_REMAINING_TIME_ESTIMATE);
+    CLR_BLINK(OSD_ESC_TMP);
 }
 
 static void osdResetStats(void)
@@ -1061,7 +1104,6 @@ static void osdResetStats(void)
 static void osdUpdateStats(void)
 {
     int16_t value = 0;
-
 #ifdef USE_GPS
     value = CM_S_TO_KM_H(gpsSol.groundSpeed);
 #endif
@@ -1069,8 +1111,9 @@ static void osdUpdateStats(void)
         stats.max_speed = value;
     }
 
-    if (stats.min_voltage > getBatteryVoltage()) {
-        stats.min_voltage = getBatteryVoltage();
+    value = getBatteryVoltage();
+    if (stats.min_voltage > value) {
+        stats.min_voltage = value;
     }
 
     value = getAmperage() / 100;
@@ -1078,18 +1121,23 @@ static void osdUpdateStats(void)
         stats.max_current = value;
     }
 
-    statRssi = scaleRange(getRssi(), 0, 1024, 0, 100);
-    if (stats.min_rssi > statRssi) {
-        stats.min_rssi = statRssi;
+    value = scaleRange(getRssi(), 0, 1024, 0, 100);
+    if (stats.min_rssi > value) {
+        stats.min_rssi = value;
     }
 
-    if (stats.max_altitude < getEstimatedAltitude()) {
-        stats.max_altitude = getEstimatedAltitude();
+    int altitude = getEstimatedAltitude();
+    if (stats.max_altitude < altitude) {
+        stats.max_altitude = altitude;
     }
 
 #ifdef USE_GPS
-    if (STATE(GPS_FIX) && STATE(GPS_FIX_HOME) && (stats.max_distance < GPS_distanceToHome)) {
-        stats.max_distance = GPS_distanceToHome;
+    if (STATE(GPS_FIX) && STATE(GPS_FIX_HOME)) {
+        value = GPS_distanceToHome;
+
+        if (stats.max_distance < GPS_distanceToHome) {
+            stats.max_distance = GPS_distanceToHome;
+        }
     }
 #endif
 }
@@ -1156,7 +1204,7 @@ static bool isSomeStatEnabled(void)
     return false;
 }
 
-static void osdShowStats(void)
+static void osdShowStats(uint16_t endBatteryVoltage)
 {
     uint8_t top = 2;
     char buff[OSD_ELEMENT_BUFFER_LENGTH];
@@ -1177,12 +1225,12 @@ static void osdShowStats(void)
     }
 
     if (osdConfig()->enabled_stats[OSD_STAT_TIMER_1]) {
-        osdFormatTimer(buff, false, OSD_TIMER_1);
+        osdFormatTimer(buff, false, (OSD_TIMER_SRC(osdConfig()->timers[OSD_TIMER_1]) == OSD_TIMER_SRC_ON ? false : true), OSD_TIMER_1);
         osdDisplayStatisticLabel(top++, osdTimerSourceNames[OSD_TIMER_SRC(osdConfig()->timers[OSD_TIMER_1])], buff);
     }
 
     if (osdConfig()->enabled_stats[OSD_STAT_TIMER_2]) {
-        osdFormatTimer(buff, false, OSD_TIMER_2);
+        osdFormatTimer(buff, false, (OSD_TIMER_SRC(osdConfig()->timers[OSD_TIMER_2]) == OSD_TIMER_SRC_ON ? false : true), OSD_TIMER_2);
         osdDisplayStatisticLabel(top++, osdTimerSourceNames[OSD_TIMER_SRC(osdConfig()->timers[OSD_TIMER_2])], buff);
     }
 
@@ -1202,8 +1250,13 @@ static void osdShowStats(void)
     }
 
     if (osdConfig()->enabled_stats[OSD_STAT_END_BATTERY]) {
-        tfp_sprintf(buff, "%d.%1d%c", getBatteryVoltage() / 10, getBatteryVoltage() % 10, SYM_VOLT);
+        tfp_sprintf(buff, "%d.%1d%c", endBatteryVoltage / 10, endBatteryVoltage % 10, SYM_VOLT);
         osdDisplayStatisticLabel(top++, "END BATTERY", buff);
+    }
+
+    if (osdConfig()->enabled_stats[OSD_STAT_BATTERY]) {
+        tfp_sprintf(buff, "%d.%1d%c", getBatteryVoltage() / 10, getBatteryVoltage() % 10, SYM_VOLT);
+        osdDisplayStatisticLabel(top++, "BATTERY", buff);
     }
 
     if (osdConfig()->enabled_stats[OSD_STAT_MIN_RSSI]) {
@@ -1242,8 +1295,6 @@ static void osdShowStats(void)
     }
 #endif
 
-    // Reset time since last armed here to ensure this timer is at zero when back at "main" OSD screen
-    stats.armed_time = 0;
 }
 
 static void osdShowArmed(void)
@@ -1255,27 +1306,56 @@ static void osdShowArmed(void)
 STATIC_UNIT_TESTED void osdRefresh(timeUs_t currentTimeUs)
 {
     static timeUs_t lastTimeUs = 0;
+    static bool osdStatsEnabled = false;
+    static bool osdStatsVisible = false;
+    static timeUs_t osdStatsRefreshTimeUs;
+    static uint16_t endBatteryVoltage;
 
     // detect arm/disarm
     if (armState != ARMING_FLAG(ARMED)) {
         if (ARMING_FLAG(ARMED)) {
+            osdStatsEnabled = false;
+            osdStatsVisible = false;
             osdResetStats();
             osdShowArmed();
             resumeRefreshAt = currentTimeUs + (REFRESH_1S / 2);
-        } else if (isSomeStatEnabled()) {
-            osdShowStats();
+        } else if (isSomeStatEnabled()
+                   && (!(getArmingDisableFlags() & ARMING_DISABLED_RUNAWAY_TAKEOFF)
+                       || !VISIBLE(osdConfig()->item_pos[OSD_WARNINGS]))) { // suppress stats if runaway takeoff triggered disarm and WARNINGS element is visible
+            osdStatsEnabled = true;
             resumeRefreshAt = currentTimeUs + (60 * REFRESH_1S);
+            endBatteryVoltage = getBatteryVoltage();
         }
 
         armState = ARMING_FLAG(ARMED);
     }
 
-    osdUpdateStats();
 
     if (ARMING_FLAG(ARMED)) {
+        osdUpdateStats();
         timeUs_t deltaT = currentTimeUs - lastTimeUs;
         flyTime += deltaT;
         stats.armed_time += deltaT;
+    } else if (osdStatsEnabled) {  // handle showing/hiding stats based on OSD disable switch position
+        if (displayIsGrabbed(osdDisplayPort)) {
+            osdStatsEnabled = false;
+            resumeRefreshAt = 0;
+            stats.armed_time = 0;
+        } else {
+            if (IS_RC_MODE_ACTIVE(BOXOSD) && osdStatsVisible) {
+                osdStatsVisible = false;
+                displayClearScreen(osdDisplayPort);
+            } else if (!IS_RC_MODE_ACTIVE(BOXOSD)) {
+                if (!osdStatsVisible) {
+                    osdStatsVisible = true;
+                    osdStatsRefreshTimeUs = 0;
+                }
+                if (currentTimeUs >= osdStatsRefreshTimeUs) {
+                    osdStatsRefreshTimeUs = currentTimeUs + REFRESH_1S;
+                    osdShowStats(endBatteryVoltage);
+                }
+            }
+        }
     }
     lastTimeUs = currentTimeUs;
 
@@ -1283,14 +1363,15 @@ STATIC_UNIT_TESTED void osdRefresh(timeUs_t currentTimeUs)
         if (cmp32(currentTimeUs, resumeRefreshAt) < 0) {
             // in timeout period, check sticks for activity to resume display.
             if (IS_HI(THROTTLE) || IS_HI(PITCH)) {
-                resumeRefreshAt = 0;
+                resumeRefreshAt = currentTimeUs;
             }
-
             displayHeartbeat(osdDisplayPort);
             return;
         } else {
             displayClearScreen(osdDisplayPort);
             resumeRefreshAt = 0;
+            osdStatsEnabled = false;
+            stats.armed_time = 0;
         }
     }
 
@@ -1298,7 +1379,7 @@ STATIC_UNIT_TESTED void osdRefresh(timeUs_t currentTimeUs)
 
 #ifdef USE_ESC_SENSOR
     if (feature(FEATURE_ESC_SENSOR)) {
-        escData = getEscSensorData(ESC_SENSOR_COMBINED);
+        escDataCombined = getEscSensorData(ESC_SENSOR_COMBINED);
     }
 #endif
 
@@ -1313,6 +1394,7 @@ STATIC_UNIT_TESTED void osdRefresh(timeUs_t currentTimeUs)
 #endif
     }
 #endif
+    lastArmState = ARMING_FLAG(ARMED);
 }
 
 /*
