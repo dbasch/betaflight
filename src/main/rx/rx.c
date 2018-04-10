@@ -558,8 +558,10 @@ static void detectAndApplySignalLossBehaviour(void)
         } else {
             if (cmp32(currentTimeMs, rcInvalidPulsPeriod[channel]) < 0) {
                 continue;           // skip to next channel to hold channel value MAX_INVALID_PULS_TIME
-            } else if (failsafeConfig()->failsafe_procedure != FAILSAFE_PROCEDURE_GPS_RESCUE) {
-                sample = getRxfailValue(channel);   // after that apply rxfail value
+            } else {
+                if (failsafeConfig()->failsafe_procedure != FAILSAFE_PROCEDURE_GPS_RESCUE) {
+                    sample = getRxfailValue(channel);   // after that apply rxfail value
+                }
                 if (channel < NON_AUX_CHANNEL_COUNT) {
                     rxFlightChannelsValid = false;
                 }
