@@ -33,6 +33,7 @@
 #include "fc/rc_controls.h"
 
 #include "flight/altitude.h"
+#include "flight/failsafe.h"
 #include "flight/gps_rescue.h"
 #include "flight/imu.h"
 #include "flight/pid.h"
@@ -76,7 +77,7 @@ void updateGPSRescueState(void)
         rescueStart();
     }
 
-    rescueState.isFailsafe = FLIGHT_MODE(FAILSAFE_MODE);
+    rescueState.isFailsafe = failsafeIsActive();
 
     sensorUpdate();
 
@@ -88,10 +89,7 @@ void updateGPSRescueState(void)
             if (hoverThrottle == 0) { //no actual throttle data yet, let's use the default.
                 hoverThrottle = gpsRescue()->throttleHover;
             }
-            // Store whether we are already in angle mode, etc
-            if (FLIGHT_MODE(ANGLE_MODE)) {
-                rescueState.flags.previouslyAngleMode = true;
-            }
+
             rescueState.phase = RESCUE_ATTAIN_ALT;
             __attribute__ ((fallthrough));
         case RESCUE_ATTAIN_ALT:
@@ -284,15 +282,24 @@ void performSanityChecks()
 void rescueStart()
 {
     rescueState.phase = RESCUE_INITIALIZE;
+
+    // Store whether we are already in angle mode, etc
+    if (FLIGHT_MODE(ANGLE_MODE)) {
+        rescueState.flags.previouslyAngleMode = true;
+    } else {
+        ENABLE_FLIGHT_MODE(ANGLE_MODE);
+    }
 }
 
 void rescueStop()
 {
+    rescueState.phase = RESCUE_IDLE;
+    
     if (rescueState.flags.previouslyAngleMode) {
         ENABLE_FLIGHT_MODE(ANGLE_MODE);
+    } else {
+        DISABLE_FLIGHT_MODE(ANGLE_MODE);
     }
-
-    rescueState.phase = RESCUE_IDLE;
 }
 
 // Things that need to run regardless of GPS rescue mode being enabled or not

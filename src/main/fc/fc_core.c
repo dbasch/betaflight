@@ -714,7 +714,7 @@ bool processRx(timeUs_t currentTimeUs)
         DISABLE_FLIGHT_MODE(HORIZON_MODE);
     }
 
-      if (IS_RC_MODE_ACTIVE(BOXGPSRESCUE) || inRescueFailsafe) { //XXX TODO: and/or what else?
+      if (IS_RC_MODE_ACTIVE(BOXGPSRESCUE) || (failsafeIsActive() && failsafeConfig()->failsafe_procedure == FAILSAFE_PROCEDURE_GPS_RESCUE)) {
             if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
                 ENABLE_FLIGHT_MODE(GPS_RESCUE_MODE);
             }
