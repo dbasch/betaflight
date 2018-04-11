@@ -87,7 +87,7 @@ int32_t accSum[XYZ_AXIS_COUNT];
 
 uint32_t accTimeSum = 0;        // keep track for integration of acc
 int accSumCount = 0;
-float rescueGain = 1.0;
+float rescueGain = 2.0;
 float accVelScale;
 
 
