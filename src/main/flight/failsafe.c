@@ -213,14 +213,8 @@ void failsafeUpdateState(void)
                         failsafeState.receivingRxDataPeriodPreset = PERIOD_OF_1_SECONDS;    // require 1 seconds of valid rxData
                         reprocessState = true;
                     } else if (!receivingRxData) {
-                        if (millis() > failsafeState.throttleLowPeriod) {
-                            // JustDisarm: throttle was LOW for at least 'failsafe_throttle_low_delay' seconds
-                            failsafeActivate();
-                            failsafeState.phase = FAILSAFE_LANDED;      // skip auto-landing procedure
-                            failsafeState.receivingRxDataPeriodPreset = PERIOD_OF_3_SECONDS; // require 3 seconds of valid rxData
-                        } else {
-                            failsafeState.phase = FAILSAFE_RX_LOSS_DETECTED;
-                        }
+                        failsafeState.phase = FAILSAFE_RX_LOSS_DETECTED;
+                        
                         reprocessState = true;
                     }
                 } else {
@@ -240,7 +234,6 @@ void failsafeUpdateState(void)
                     failsafeState.phase = FAILSAFE_RX_LOSS_RECOVERED;
                 } else {
                     switch (failsafeConfig()->failsafe_procedure) {
-                        default:
                         case FAILSAFE_PROCEDURE_AUTO_LANDING:
                             // Stabilize, and set Throttle to specified level
                             failsafeActivate();
@@ -255,6 +248,7 @@ void failsafeUpdateState(void)
                         case FAILSAFE_PROCEDURE_GPS_RESCUE:
                             failsafeActivate();
                             failsafeState.phase = FAILSAFE_GPS_RESCUE;
+                            failsafeState.receivingRxDataPeriodPreset = PERIOD_OF_3_SECONDS;
                             break;
                     }
                 }
