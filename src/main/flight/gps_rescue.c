@@ -171,7 +171,6 @@ void updateGPSRescueState(void)
 void sensorUpdate()
 {
     rescueState.sensor.currentAltitude = getEstimatedAltitude();
-    rescueGain = (rescueState.phase == RESCUE_CROSSTRACK) ? 2.0 : 1.0;
 
     // Calculate altitude velocity
     static uint32_t previousTimeUs;

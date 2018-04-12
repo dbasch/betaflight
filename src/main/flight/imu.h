@@ -27,7 +27,6 @@ extern uint32_t accTimeSum;
 extern int accSumCount;
 extern float accVelScale;
 extern int32_t accSum[XYZ_AXIS_COUNT];
-extern float rescueGain;
 
 typedef struct {
     float w,x,y,z;
