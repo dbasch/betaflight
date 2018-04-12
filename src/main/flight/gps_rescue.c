@@ -128,7 +128,7 @@ void updateGPSRescueState(void)
             int32_t newSpeed = gpsRescue()->rescueGroundspeed * rescueState.sensor.distanceToHome / gpsRescue()->descentDistance;
 
             rescueState.intent.targetAltitude = constrain(newAlt, 100, rescueState.intent.targetAltitude);
-            rescueState.intent.targetGroundspeed = constrain(newSpeed, 100, rescueState.intent.targetGroundspeed);
+            rescueState.intent.targetGroundspeed = constrain(newSpeed, 500, rescueState.intent.targetGroundspeed);
             rescueState.intent.crosstrack = true;
             rescueState.intent.minAngle = 10;
             rescueState.intent.maxAngle = 20;
