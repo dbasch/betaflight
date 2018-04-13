@@ -509,8 +509,12 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
         }
 
         if (useCOG && !gpsHeadingInitialized) {
+            // Reset our reference and reinitialize quaternion.  This will likely need to happen more than once per flight.
+
             imuComputeQuaternionFromRPY(&qP, attitude.values.roll, attitude.values.pitch, gpsSol.groundCourse);
+
             gpsHeadingInitialized = true;
+            useCOG = false; // Don't use the COG when we first reinitialize.  Next time around though, yes.
         }
     }
 #endif
