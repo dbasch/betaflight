@@ -490,6 +490,8 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
     }
 #endif
 #if defined(USE_GPS)
+    static bool gpsHeadingInitialized = false;
+
     if (!useMag && STATE(FIXED_WING) && sensors(SENSOR_GPS) && STATE(GPS_FIX) && gpsSol.numSat >= 5 && gpsSol.groundSpeed >= 300) {
         // In case of a fixed-wing aircraft we can use GPS course over ground to correct heading
         if(STATE(FIXED_WING)) {
@@ -504,6 +506,11 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
 
                 useCOG = true; // Tell the IMU to correct attitude.values.yaw with this data
             }
+        }
+
+        if (useCOG && !gpsHeadingInitialized) {
+            imuComputeQuaternionFromRPY(&qP, attitude.values.roll, attitude.values.pitch, gpsSol.groundCourse);
+            gpsHeadingInitialized = true;
         }
     }
 #endif
@@ -594,6 +601,41 @@ int16_t calculateThrottleAngleCorrection(uint8_t throttle_correction_value)
     if (angle > 900)
         angle = 900;
     return lrintf(throttle_correction_value * sin_approx(angle / (900.0f * M_PIf / 2.0f)));
+}
+
+void imuComputeQuaternionFromRPY(quaternionProducts * qP, int16_t initialRoll, int16_t initialPitch, int16_t initialYaw)
+{
+    if (initialRoll > 1800) initialRoll -= 3600;
+    if (initialPitch > 1800) initialPitch -= 3600;
+    if (initialYaw > 1800) initialYaw -= 3600;
+
+    const float cosRoll = cos_approx(DECIDEGREES_TO_RADIANS(initialRoll) * 0.5f);
+    const float sinRoll = sin_approx(DECIDEGREES_TO_RADIANS(initialRoll) * 0.5f);
+
+    const float cosPitch = cos_approx(DECIDEGREES_TO_RADIANS(initialPitch) * 0.5f);
+    const float sinPitch = sin_approx(DECIDEGREES_TO_RADIANS(initialPitch) * 0.5f);
+
+    const float cosYaw = cos_approx(DECIDEGREES_TO_RADIANS(-initialYaw) * 0.5f);
+    const float sinYaw = sin_approx(DECIDEGREES_TO_RADIANS(-initialYaw) * 0.5f);
+
+    const float q0 = cosRoll * cosPitch * cosYaw + sinRoll * sinPitch * sinYaw;
+    const float q1 = sinRoll * cosPitch * cosYaw - cosRoll * sinPitch * sinYaw;
+    const float q2 = cosRoll * sinPitch * cosYaw + sinRoll * cosPitch * sinYaw;
+    const float q3 = cosRoll * cosPitch * sinYaw - sinRoll * sinPitch * cosYaw;
+
+    qP->xx = sq(q1);
+    qP->yy = sq(q2);
+    qP->zz = sq(q3);
+
+    qP->xy = q1 * q2;
+    qP->xz = q1 * q3;
+    qP->yz = q2 * q3;
+
+    qP->wx = q0 * q1;
+    qP->wy = q0 * q2;
+    qP->wz = q0 * q3;
+
+    imuComputeRotationMatrix();
 }
 
 #ifdef SIMULATOR_BUILD
