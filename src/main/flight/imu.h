@@ -97,3 +97,5 @@ void imuQuaternionComputeProducts(quaternion *quat, quaternionProducts *quatProd
 bool imuQuaternionHeadfreeOffsetSet(void);
 void imuQuaternionHeadfreeTransformVectorEarthToBody(t_fp_vector_def * v);
 void imuComputeQuaternionFromRPY(quaternionProducts *qP, int16_t initialRoll, int16_t initialPitch, int16_t initialYaw);
+bool shouldInitializeGPSHeading(void);
+uint8_t getCOGTrust(void);
