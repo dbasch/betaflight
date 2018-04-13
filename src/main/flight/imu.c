@@ -500,8 +500,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
             // probably stop re calculating GPS heading data
 
             if (canUseGPSHeading) { // This flag is determined by gps_rescue.h
-                float tiltDirection = atan2_approx(attitude.values.roll, attitude.values.pitch); // For applying correction to heading based on craft tilt in 2d space
-                courseOverGround = tiltDirection + DECIDEGREES_TO_RADIANS(gpsSol.groundCourse);
+                courseOverGround = DECIDEGREES_TO_RADIANS(gpsSol.groundCourse);
 
                 useCOG = true; // Tell the IMU to correct attitude.values.yaw with this data
             }
