@@ -78,8 +78,7 @@ void updateGPSRescueState(void)
     }
 
     rescueState.isFailsafe = failsafeIsActive();
-    canUseGPSHeading = (rescueState.phase != RESCUE_LANDING_APPROACH && rescueState.phase != RESCUE_LANDING);
-
+    canUseGPSHeading = (rescueState.phase != RESCUE_LANDING_APPROACH && rescueState.phase != RESCUE_LANDING && rescueState.phase != RESCUE_ATTAIN_ALT);
     sensorUpdate();
 
     switch (rescueState.phase) {
@@ -140,7 +139,7 @@ void updateGPSRescueState(void)
 
             // If we are over 120% of average magnitude, just disarm since we're pretty much home
             if (rescueState.sensor.accMagnitude > rescueState.sensor.accMagnitudeAvg * 1.5) {
-                disarm();
+                //disarm();
                 rescueState.phase = RESCUE_COMPLETE;
             }
 
