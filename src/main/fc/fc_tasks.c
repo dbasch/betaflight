@@ -126,6 +126,11 @@ static void taskHandleSerial(timeUs_t currentTimeUs)
     mspSerialProcess(evaluateMspData, mspFcProcessCommand, mspFcProcessReply);
 }
 
+static void taskCliDebug()
+{
+    cliDebug();
+}
+
 void taskBatteryAlerts(timeUs_t currentTimeUs)
 {
     if (!ARMING_FLAG(ARMED)) {
@@ -242,6 +247,7 @@ void fcTasksInit(void)
     setTaskEnabled(TASK_BATTERY_VOLTAGE, useBatteryVoltage);
     const bool useBatteryCurrent = batteryConfig()->currentMeterSource != CURRENT_METER_NONE;
     setTaskEnabled(TASK_BATTERY_CURRENT, useBatteryCurrent);
+    setTaskEnabled(TASK_CLI_DEBUG, true);
 #ifdef USE_OSD_SLAVE
     const bool useBatteryAlerts = batteryConfig()->useVBatAlerts || batteryConfig()->useConsumptionAlerts;
 #else
@@ -456,6 +462,13 @@ cfTask_t cfTasks[TASK_COUNT] = {
         .taskFunc = dispatchProcess,
         .desiredPeriod = TASK_PERIOD_HZ(1000),
         .staticPriority = TASK_PRIORITY_HIGH,
+    },
+
+    [TASK_CLI_DEBUG] = {
+        .taskName = "CLI_DEBUG",
+        .taskFunc = taskCliDebug,
+        .desiredPeriod = TASK_PERIOD_HZ(2),
+        .staticPriority = TASK_PRIORITY_LOW
     },
 
 #ifdef USE_BEEPER

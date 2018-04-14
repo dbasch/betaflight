@@ -167,6 +167,8 @@ static bool configIsInCopy = false;
 static const char* const emptyName = "-";
 static const char* const emptryString = "";
 
+static bool debugging = false;
+
 #ifndef USE_QUAD_MIXER_ONLY
 // sync this with mixerMode_e
 static const char * const mixerNames[] = {
@@ -317,6 +319,28 @@ static void cliPrintLinef(const char *format, ...)
     va_end(va);
 }
 
+void cliDebug()
+{
+    if (!debugging) {
+        return;
+    }
+
+    cliPrintLinef("[0] = %d, [1] = %d, [2] = %d, [3] = %d\r\n", debug[0], debug[1], debug[2], debug[3]);
+}
+
+static void cliLoggerStart(char *cmdline)
+{
+    UNUSED(cmdline);
+
+    debugging = true;
+}
+
+static void cliLoggerStop(char *cmdline)
+{
+    UNUSED(cmdline);
+
+    debugging = false;
+}
 
 static void printValuePointer(const clivalue_t *var, const void *valuePointer, bool full)
 {
@@ -3913,6 +3937,8 @@ const clicmd_t cmdTable[] = {
 #ifdef USE_USB_MSC
 	CLI_COMMAND_DEF("msc", "switch into msc mode", NULL, cliMsc),
 #endif
+    CLI_COMMAND_DEF("logger_start", "print debug data in realtime to cli", NULL, cliLoggerStart),
+    CLI_COMMAND_DEF("logger_stop", "stop printing debug data in realtime to cli", NULL, cliLoggerStop),
 };
 
 static void cliHelp(char *cmdline)

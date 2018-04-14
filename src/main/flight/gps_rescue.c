@@ -78,7 +78,8 @@ void updateGPSRescueState(void)
     }
 
     rescueState.isFailsafe = failsafeIsActive();
-    canUseGPSHeading = (rescueState.phase != RESCUE_LANDING_APPROACH && rescueState.phase != RESCUE_LANDING && rescueState.phase != RESCUE_ATTAIN_ALT);
+    canUseGPSHeading = (rescueState.phase != RESCUE_LANDING);
+
     sensorUpdate();
 
     switch (rescueState.phase) {
@@ -142,7 +143,7 @@ void updateGPSRescueState(void)
                 if (rescueState.isFailsafe) {
                     disarm();
                 }
-                
+
                 rescueState.phase = RESCUE_COMPLETE;
             }
 
@@ -360,11 +361,11 @@ void rescueAttainPosition()
     const int16_t speedError = (rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed) / 100;
     const int16_t speedDerivative = speedError - previousSpeedError;
 
-    speedIntegral = constrain(speedIntegral + speedError, -50, 50);
+    speedIntegral = constrain(speedIntegral + speedError, -100, 100);
 
     previousSpeedError = speedError;
 
-    int16_t angleAdjustment =  gpsRescue()->vP * speedError + gpsRescue()->vI * speedIntegral + gpsRescue()->vD * speedDerivative;
+    int16_t angleAdjustment =  gpsRescue()->vP * speedError + ((float) gpsRescue()->vI / 100)  * speedIntegral + gpsRescue()->vD * speedDerivative;
 
     gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] + constrain(angleAdjustment, -ABS(angleAdjustment), 80), rescueState.intent.minAngle * 100, rescueState.intent.maxAngle * 100);
 
@@ -379,11 +380,11 @@ void rescueAttainPosition()
     const int16_t altitudeError = (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 100; // Error in meters
     const int16_t altitudeDerivative = altitudeError - previousAltitudeError;
 
-    altitudeIntegral = constrain(altitudeIntegral + altitudeError, -50, 50);
+    altitudeIntegral = constrain(altitudeIntegral + altitudeError, -100, 100);
 
     previousAltitudeError = altitudeError;
 
-    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative) / ct / 100;
+    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + ((float) gpsRescue()->tI / 100) * altitudeIntegral + gpsRescue()->tD * altitudeDerivative) / ct / 100;
     int16_t hoverAdjustment = (hoverThrottle - 1000) / ct;
 
     rescueThrottle = constrain(1000 + altitudeAdjustment + hoverAdjustment, gpsRescue()->throttleMin, gpsRescue()->throttleMax);
