@@ -356,7 +356,7 @@ void rescueAttainPosition()
         Speed controller
     */
     static float previousSpeedError = 0;
-    static float speedIntegral = 0;
+    static int16_t speedIntegral = 0;
 
     const int16_t speedError = (rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed) / 100;
     const int16_t speedDerivative = speedError - previousSpeedError;
@@ -375,7 +375,7 @@ void rescueAttainPosition()
         Altitude controller
     */
     static float previousAltitudeError = 0;
-    static float altitudeIntegral = 0;
+    static int16_t altitudeIntegral = 0;
 
     const int16_t altitudeError = (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 100; // Error in meters
     const int16_t altitudeDerivative = altitudeError - previousAltitudeError;
