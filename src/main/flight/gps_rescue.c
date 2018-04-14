@@ -78,6 +78,7 @@ void updateGPSRescueState(void)
     }
 
     rescueState.isFailsafe = failsafeIsActive();
+    canUseGPSHeading = (rescueState.phase != RESCUE_LANDING_APPROACH && rescueState.phase != RESCUE_LANDING);
 
     sensorUpdate();
 
@@ -348,7 +349,6 @@ void rescueAttainPosition()
         return;
     }
 
-    canUseGPSHeading = (rescueState.phase != RESCUE_LANDING_APPROACH && rescueState.phase != RESCUE_LANDING);
     /**
         Speed controller
     */
