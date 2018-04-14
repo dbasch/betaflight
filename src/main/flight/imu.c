@@ -263,7 +263,7 @@ static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
         // (Rxx; Ryx) - measured (estimated) heading vector (EF)
         // (cos(COG), sin(COG)) - reference heading vector (EF)
         // error is cross product between reference heading and estimated heading (calculated in EF)
-        const float ez_ef = - sin_approx(courseOverGround) * rMat[0][0] - cos_approx(courseOverGround) * rMat[1][0];
+        const float ez_ef = (- sin_approx(courseOverGround) * rMat[0][0] - cos_approx(courseOverGround) * rMat[1][0]) * getCOGTrust();
 
         ex = rMat[2][0] * ez_ef;
         ey = rMat[2][1] * ez_ef;
@@ -593,7 +593,7 @@ bool shouldInitializeGPSHeading()
 // letting us know when to reinitialize quaternion using gps ground course
 uint8_t getCOGTrust()
 {
-    return 0; // For now, lets only reinitialize once, and not use this until we're ready.
+    return 3; // For now, lets only reinitialize once, and not use this until we're ready.
 }
 
 float getCosTiltAngle(void)
