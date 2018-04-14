@@ -490,9 +490,7 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
     }
 #endif
 #if defined(USE_GPS)
-    static bool gpsHeadingInitialized = false;
-
-    if (!useMag && STATE(FIXED_WING) && sensors(SENSOR_GPS) && STATE(GPS_FIX) && gpsSol.numSat >= 5 && gpsSol.groundSpeed >= 300) {
+    if (!useMag && sensors(SENSOR_GPS) && STATE(GPS_FIX) && gpsSol.numSat >= 5 && gpsSol.groundSpeed >= 500) {
         // In case of a fixed-wing aircraft we can use GPS course over ground to correct heading
         if(STATE(FIXED_WING)) {
             courseOverGround = DECIDEGREES_TO_RADIANS(gpsSol.groundCourse);
@@ -508,12 +506,11 @@ static void imuCalculateEstimatedAttitude(timeUs_t currentTimeUs)
             }
         }
 
-        if (useCOG && !gpsHeadingInitialized) {
+        if (useCOG && shouldInitializeGPSHeading()) {
             // Reset our reference and reinitialize quaternion.  This will likely need to happen more than once per flight.
 
             imuComputeQuaternionFromRPY(&qP, attitude.values.roll, attitude.values.pitch, gpsSol.groundCourse);
 
-            gpsHeadingInitialized = true;
             useCOG = false; // Don't use the COG when we first reinitialize.  Next time around though, yes.
         }
     }
@@ -571,6 +568,32 @@ void imuUpdateAttitude(timeUs_t currentTimeUs)
         acc.accADC[Y] = 0;
         acc.accADC[Z] = 0;
     }
+}
+
+// Determine whether or not we have a reliable enough CoG to reinitialize the quaternion.
+// If we haven't initialized ever before, we should regardless of trust
+bool shouldInitializeGPSHeading()
+{
+    static float initialized = false;
+
+    if (!initialized) {
+        initialized = true;
+
+        return true;
+    }
+
+    if (getCOGTrust() == 10) {
+        return true;
+    }
+    
+    return false;
+}
+
+// TODO:  Make this generate a trust value to use as a gain and for
+// letting us know when to reinitialize quaternion using gps ground course
+uint8_t getCOGTrust()
+{
+    return 0; // For now, lets only reinitialize once, and not use this until we're ready.
 }
 
 float getCosTiltAngle(void)
