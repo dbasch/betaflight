@@ -348,7 +348,7 @@ void rescueAttainPosition()
         return;
     }
 
-    canUseGPSHeading = (rescueState.phase != RESCUE_LANDING_APPROACH && rescueState.phase != RESCUE_LANDING) ? true : false;
+    canUseGPSHeading = (rescueState.phase != RESCUE_LANDING_APPROACH && rescueState.phase != RESCUE_LANDING);
     /**
         Speed controller
     */
