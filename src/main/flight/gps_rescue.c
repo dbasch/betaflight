@@ -365,9 +365,9 @@ void rescueAttainPosition()
 
     previousSpeedError = speedError;
 
-    int16_t angleAdjustment =  gpsRescue()->vP * speedError + ((float) gpsRescue()->vI / 100)  * speedIntegral + gpsRescue()->vD * speedDerivative;
+    int16_t angleAdjustment =  gpsRescue()->vP * speedError + (gpsRescue()->vI * speedIntegral) / 100 +  gpsRescue()->vD * speedDerivative;
 
-    gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] + constrain(angleAdjustment, -ABS(angleAdjustment), 80), rescueState.intent.minAngle * 100, rescueState.intent.maxAngle * 100);
+    gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] + MAX(angleAdjustment, 80), rescueState.intent.minAngle * 100, rescueState.intent.maxAngle * 100);
 
     float ct = cos(DECIDEGREES_TO_RADIANS(gpsRescueAngle[AI_PITCH] / 10));
 
@@ -384,7 +384,7 @@ void rescueAttainPosition()
 
     previousAltitudeError = altitudeError;
 
-    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + ((float) gpsRescue()->tI / 100) * altitudeIntegral + gpsRescue()->tD * altitudeDerivative) / ct / 100;
+    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + (gpsRescue()->tI * altitudeIntegral) / 100 *  + gpsRescue()->tD * altitudeDerivative) / ct / 100;
     int16_t hoverAdjustment = (hoverThrottle - 1000) / ct;
 
     rescueThrottle = constrain(1000 + altitudeAdjustment + hoverAdjustment, gpsRescue()->throttleMin, gpsRescue()->throttleMax);
