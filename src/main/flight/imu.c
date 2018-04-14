@@ -581,19 +581,8 @@ bool shouldInitializeGPSHeading()
 
         return true;
     }
-
-    if (getCOGTrust() == 10) {
-        return true;
-    }
     
     return false;
-}
-
-// TODO:  Make this generate a trust value to use as a gain and for
-// letting us know when to reinitialize quaternion using gps ground course
-uint8_t getCOGTrust()
-{
-    return 3; // For now, lets only reinitialize once, and not use this until we're ready.
 }
 
 float getCosTiltAngle(void)
