@@ -117,9 +117,7 @@ void updateGPSRescueState(void)
             rescueState.intent.minAngle = 15;
             rescueState.intent.maxAngle = gpsRescue()->angle;
             break;
-        case RESCUE_LANDING_APPROACH:
-            canUseGPSHeading = false;
-            
+        case RESCUE_LANDING_APPROACH:            
             // We are getting close to home in the XY plane, get Z where it needs to be to move to landing phase
             if (rescueState.sensor.distanceToHome < 10 && rescueState.sensor.currentAltitude <= 1000) {
                 rescueState.phase = RESCUE_LANDING;
@@ -350,6 +348,7 @@ void rescueAttainPosition()
         return;
     }
 
+    canUseGPSHeading = (rescueState.phase != RESCUE_LANDING_APPROACH && rescueState.phase != RESCUE_LANDING);
     /**
         Speed controller
     */
