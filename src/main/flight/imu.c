@@ -619,7 +619,7 @@ int16_t calculateThrottleAngleCorrection(uint8_t throttle_correction_value)
     return lrintf(throttle_correction_value * sin_approx(angle / (900.0f * M_PIf / 2.0f)));
 }
 
-void imuComputeQuaternionFromRPY(quaternionProducts * qP, int16_t initialRoll, int16_t initialPitch, int16_t initialYaw)
+void imuComputeQuaternionFromRPY(quaternionProducts *quatProd, int16_t initialRoll, int16_t initialPitch, int16_t initialYaw)
 {
     if (initialRoll > 1800) initialRoll -= 3600;
     if (initialPitch > 1800) initialPitch -= 3600;
@@ -639,17 +639,17 @@ void imuComputeQuaternionFromRPY(quaternionProducts * qP, int16_t initialRoll, i
     const float q2 = cosRoll * sinPitch * cosYaw + sinRoll * cosPitch * sinYaw;
     const float q3 = cosRoll * cosPitch * sinYaw - sinRoll * sinPitch * cosYaw;
 
-    qP->xx = sq(q1);
-    qP->yy = sq(q2);
-    qP->zz = sq(q3);
+    quatProd->xx = sq(q1);
+    quatProd->yy = sq(q2);
+    quatProd->zz = sq(q3);
 
-    qP->xy = q1 * q2;
-    qP->xz = q1 * q3;
-    qP->yz = q2 * q3;
+    quatProd->xy = q1 * q2;
+    quatProd->xz = q1 * q3;
+    quatProd->yz = q2 * q3;
 
-    qP->wx = q0 * q1;
-    qP->wy = q0 * q2;
-    qP->wz = q0 * q3;
+    quatProd->wx = q0 * q1;
+    quatProd->wy = q0 * q2;
+    quatProd->wz = q0 * q3;
 
     imuComputeRotationMatrix();
 }
