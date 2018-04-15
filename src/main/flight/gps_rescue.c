@@ -380,7 +380,12 @@ void rescueAttainPosition()
     const int16_t altitudeError = (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 100; // Error in meters
     const int16_t altitudeDerivative = altitudeError - previousAltitudeError;
 
-    altitudeIntegral = constrain(altitudeIntegral + altitudeError, -100, 100);
+    if (ABS(altitudeError) < 10) {
+        altitudeIntegral = constrain(altitudeIntegral + altitudeError, -100, 100);
+    }
+    else {
+        altitudeIntegral = 0;
+    }
 
     previousAltitudeError = altitudeError;
 
