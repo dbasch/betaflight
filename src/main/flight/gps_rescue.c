@@ -380,11 +380,16 @@ void rescueAttainPosition()
     const int16_t altitudeError = (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 100; // Error in meters
     const int16_t altitudeDerivative = altitudeError - previousAltitudeError;
 
-    altitudeIntegral = constrain(altitudeIntegral + altitudeError, -100, 100);
+    // Only allow integral windup within +-15m absolute altitude error
+    if (ABS(altitudeError) < 15) {
+        altitudeIntegral = constrain(altitudeIntegral + altitudeError, -250, 250);
+    } else {
+        altitudeIntegral = 0;
+    }
 
     previousAltitudeError = altitudeError;
 
-    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + (gpsRescue()->tI * altitudeIntegral) / 100 *  + gpsRescue()->tD * altitudeDerivative) / ct / 100;
+    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + (gpsRescue()->tI * altitudeIntegral) / 10 *  + gpsRescue()->tD * altitudeDerivative) / ct / 100;
     int16_t hoverAdjustment = (hoverThrottle - 1000) / ct;
 
     rescueThrottle = constrain(1000 + altitudeAdjustment + hoverAdjustment, gpsRescue()->throttleMin, gpsRescue()->throttleMax);
