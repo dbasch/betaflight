@@ -389,7 +389,7 @@ void rescueAttainPosition()
 
     previousAltitudeError = altitudeError;
 
-    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + (gpsRescue()->tI * altitudeIntegral) / 10 *  + gpsRescue()->tD * altitudeDerivative) / ct / 100;
+    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + (gpsRescue()->tI * altitudeIntegral) / 10 *  + gpsRescue()->tD * altitudeDerivative) / ct / 20;
     int16_t hoverAdjustment = (hoverThrottle - 1000) / ct;
 
     rescueThrottle = constrain(1000 + altitudeAdjustment + hoverAdjustment, gpsRescue()->throttleMin, gpsRescue()->throttleMax);
