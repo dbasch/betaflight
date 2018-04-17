@@ -200,7 +200,7 @@ void performSanityChecks()
     if (rescueState.phase == RESCUE_IDLE) {
         return;
     }
-
+/*
     // Do not abort until each of these items is fully tested
     if (rescueState.failure != RESCUE_HEALTHY && rescueState.isFailsafe == true) {
         rescueState.phase = RESCUE_ABORT;
@@ -223,10 +223,10 @@ void performSanityChecks()
         rescueState.failure = RESCUE_TOO_HIGH;
     }
 
-    /**
-        Things that should run at a low refresh rate (such as flyaway detection, etc)
-        This runs at ~1hz
-    */
+
+    //Things that should run at a low refresh rate (such as flyaway detection, etc)
+    //This runs at ~1hz
+
     static uint32_t previousTimeUs;
 
     const uint32_t currentTimeUs = micros();
@@ -238,9 +238,9 @@ void performSanityChecks()
 
     previousTimeUs = currentTimeUs;
 
-    /**
-        Flyaway Detection - Defined as 5 seconds of samples further than the previous one
-    */
+
+     //Flyaway Detection - Defined as 5 seconds of samples further than the previous one
+
     static int8_t flyawayI = 0;
     static uint16_t previousDTH = 0;
 
@@ -256,9 +256,8 @@ void performSanityChecks()
         rescueState.failure = RESCUE_TOO_FAR;
     }
 
-    /**
-        To the moon detection - Defined as 5 seconds of going away from our altitude target towards the sky
-    */
+
+    //    To the moon detection - Defined as 5 seconds of going away from our altitude target towards the sky
     static int8_t toTheMoonI = 0;
     static int32_t previousAlt;
 
@@ -276,7 +275,7 @@ void performSanityChecks()
     if (toTheMoonI == 10) {
         rescueState.failure = RESCUE_TOO_HIGH;
     }
-
+*/
 }
 
 void rescueStart()
@@ -367,7 +366,7 @@ void rescueAttainPosition()
 
     previousAltitudeError = altitudeError;
 
-    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + gpsRescue()->tI * altitudeIntegral + gpsRescue()->tD * altitudeDerivative) / ct / 100;
+    int16_t altitudeAdjustment = (gpsRescue()->tP * altitudeError + (gpsRescue()->tI * altitudeIntegral) / 10 *  + gpsRescue()->tD * altitudeDerivative) / ct / 20;
     int16_t hoverAdjustment = (hoverThrottle - 1000) / ct;
 
     rescueThrottle = constrain(1000 + altitudeAdjustment + hoverAdjustment, gpsRescue()->throttleMin, gpsRescue()->throttleMax);
