@@ -338,18 +338,18 @@ void rescueAttainPosition()
         Speed controller
     */
     static float previousSpeedError = 0;
-    static float speedIntegral = 0;
+    static int16_t speedIntegral = 0;
 
     const int16_t speedError = (rescueState.intent.targetGroundspeed - rescueState.sensor.groundSpeed) / 100;
     const int16_t speedDerivative = speedError - previousSpeedError;
 
-    speedIntegral = constrain(speedIntegral + speedError, -50, 50);
+    speedIntegral = constrain(speedIntegral + speedError, -100, 100);
 
     previousSpeedError = speedError;
 
-    int16_t angleAdjustment =  gpsRescue()->vP * speedError + gpsRescue()->vI * speedIntegral + gpsRescue()->vD * speedDerivative;
+    int16_t angleAdjustment =  gpsRescue()->vP * speedError + (gpsRescue()->vI * speedIntegral) / 100 +  gpsRescue()->vD * speedDerivative;
 
-    gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] + angleAdjustment, rescueState.intent.minAngle * 100, rescueState.intent.maxAngle * 100);
+    gpsRescueAngle[AI_PITCH] = constrain(gpsRescueAngle[AI_PITCH] + MIN(angleAdjustment, 80), rescueState.intent.minAngle * 100, rescueState.intent.maxAngle * 100);
 
     float ct = cos(DECIDEGREES_TO_RADIANS(gpsRescueAngle[AI_PITCH] / 10));
 
@@ -357,12 +357,17 @@ void rescueAttainPosition()
         Altitude controller
     */
     static float previousAltitudeError = 0;
-    static float altitudeIntegral = 0;
+    static int16_t altitudeIntegral = 0;
 
     const int16_t altitudeError = (rescueState.intent.targetAltitude - rescueState.sensor.currentAltitude) / 100; // Error in meters
     const int16_t altitudeDerivative = altitudeError - previousAltitudeError;
 
-    altitudeIntegral = constrain(altitudeIntegral + altitudeError, -50, 50);
+    // Only allow integral windup within +-15m absolute altitude error
+    if (ABS(altitudeError) < 15) {
+        altitudeIntegral = constrain(altitudeIntegral + altitudeError, -250, 250);
+    } else {
+        altitudeIntegral = 0;
+    }
 
     previousAltitudeError = altitudeError;
 
