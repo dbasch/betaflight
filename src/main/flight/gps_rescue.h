@@ -38,10 +38,6 @@ typedef enum {
 } rescueFailureState_e;
 
 typedef struct {
-    bool previouslyAngleMode;
-} rescueFlags_s;
-
-typedef struct {
     int32_t targetAltitude;
     int32_t targetGroundspeed;
     uint8_t minAngle; //NOTE: ANGLES ARE IN DEGREES
@@ -66,7 +62,6 @@ typedef struct {
 typedef struct {
     rescuePhase_e phase;
     rescueFailureState_e failure;
-    rescueFlags_s flags;
     rescueSensorData_s sensor;
     rescueIntent_s intent;
     bool isFailsafe;
