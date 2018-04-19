@@ -254,6 +254,7 @@ static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
     
     float ex = 0, ey = 0, ez = 0;
 
+#ifdef USE_GPS
     if (useCOG) {
         // Use raw heading error (from GPS or whatever else)
         while (courseOverGround >  M_PIf) courseOverGround -= (2.0f * M_PIf);
@@ -269,6 +270,11 @@ static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
         ey = rMat[2][1] * ez_ef;
         ez = rMat[2][2] * ez_ef;
     }
+#else
+    UNUSED(useCOG);
+    UNUSED(courseOverGround);
+#endif
+
 
 #ifdef USE_MAG
     // Use measured magnetic field vector

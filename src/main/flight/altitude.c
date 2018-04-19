@@ -186,6 +186,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 
     static float zgOffset = 0;
     int32_t gpsAlt = 0;
+    float gpsTrust = 0;
     bool haveBaroAlt = false;
     bool haveGPSAlt = false;
 #ifdef USE_BARO
@@ -207,6 +208,8 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     if (sensors(SENSOR_GPS)) {
         gpsAlt = gpsSol.llh.alt;
         haveGPSAlt = true;
+        gpsTrust = 100.0/gpsSol.hdop;
+         if (gpsTrust > 0.9) gpsTrust = 0.9;
     }
 #endif
 
@@ -267,9 +270,6 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
       }
       baroAlt -= baroAltOffset;
       gpsAlt -= gpsAltOffset;
-
-    float gpsTrust = 100.0/gpsSol.hdop;
-     if (gpsTrust > 0.9) gpsTrust = 0.9;
 
 
     if (haveGPSAlt && haveBaroAlt) {
