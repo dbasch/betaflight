@@ -230,18 +230,19 @@ PG_RESET_TEMPLATE(gpsConfig_t, gpsConfig,
 
 PG_RESET_TEMPLATE(gpsRescue_t, gpsRescue,
     .angle = 30,
-    .initialAltitude = 50,
-    .descentDistance = 100,
+    .initialAltitude = 70,
+    .descentDistance = 200,
     .rescueGroundspeed = 1500,
-    .tP = 350,
+    .tP = 150,
     .tI = 20,
-    .tD = 10,
+    .tD = 50,
     .vP = 80,
     .vI = 20,
     .vD = 15,
-    .throttleMin = 1150,
+    .throttleMin = 1200,
     .throttleMax = 1800,
-    .throttleHover = 1280
+    .throttleHover = 1280,
+    .sanityChecks = 0
 );
 
 

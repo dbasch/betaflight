@@ -99,7 +99,7 @@ void updateGPSRescueState(void)
             }
 
             rescueState.intent.targetGroundspeed = 500;
-            rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
+            rescueState.intent.targetAltitude = MAX(gpsRescue()->initialAltitude * 100, rescueState.sensor.maxAltitude + 1500);
             rescueState.intent.crosstrack = true;
             rescueState.intent.minAngle = 10;
             rescueState.intent.maxAngle = 15;
@@ -112,7 +112,7 @@ void updateGPSRescueState(void)
             // We can assume at this point that we are at or above our RTH height, so we need to try and point to home and tilt while maintaining alt
             // Is our altitude way off?  We should probably kick back to phase RESCUE_ATTAIN_ALT
             rescueState.intent.targetGroundspeed = gpsRescue()->rescueGroundspeed;
-            rescueState.intent.targetAltitude = gpsRescue()->initialAltitude * 100;
+            rescueState.intent.targetAltitude = MAX(gpsRescue()->initialAltitude * 100, rescueState.sensor.maxAltitude + 1500);
             rescueState.intent.crosstrack = true;
             rescueState.intent.minAngle = 15;
             rescueState.intent.maxAngle = gpsRescue()->angle;
@@ -145,7 +145,7 @@ void updateGPSRescueState(void)
 
             rescueState.intent.targetGroundspeed = 0;
             rescueState.intent.targetAltitude = 0;
-            rescueState.intent.crosstrack = false;
+            rescueState.intent.crosstrack = true;
             rescueState.intent.minAngle = 0;
             rescueState.intent.maxAngle = 15;
             break;
@@ -198,11 +198,13 @@ void sensorUpdate()
 void performSanityChecks()
 {
     if (rescueState.phase == RESCUE_IDLE) {
+        rescueState.failure = RESCUE_HEALTHY;
+        
         return;
     }
-/*
+
     // Do not abort until each of these items is fully tested
-    if (rescueState.failure != RESCUE_HEALTHY && rescueState.isFailsafe == true) {
+    if (rescueState.failure != RESCUE_HEALTHY && rescueState.isFailsafe == true && gpsRescue()->sanityChecks == RESCUE_SANITY_ON) {
         rescueState.phase = RESCUE_ABORT;
     }
 
@@ -211,21 +213,8 @@ void performSanityChecks()
         rescueState.failure = RESCUE_CRASH_DETECTED;
     }
 
-
-    // If we get more than 500 meters further than our furthest point prior to RTH, something DEFINITELY went wrong
-    if (rescueState.sensor.distanceToHome > rescueState.sensor.maxDistanceToHome + 500) {
-        rescueState.failure = RESCUE_TOO_FAR;
-    }
-
-    
-    // If we get more than 200 meters above our target altitude, something is very bad
-    if (rescueState.sensor.currentAltitude > rescueState.intent.targetAltitude + 2000) {
-        rescueState.failure = RESCUE_TOO_HIGH;
-    }
-
-
-    //Things that should run at a low refresh rate (such as flyaway detection, etc)
-    //This runs at ~1hz
+    //  Things that should run at a low refresh rate (such as flyaway detection, etc)
+    //  This runs at ~1hz
 
     static uint32_t previousTimeUs;
 
@@ -238,44 +227,14 @@ void performSanityChecks()
 
     previousTimeUs = currentTimeUs;
 
+     // Stalled movement detection
+    static int8_t gsI = 0;
 
-     //Flyaway Detection - Defined as 5 seconds of samples further than the previous one
+    gsI = constrain(gsI + (rescueState.sensor.groundSpeed < 150) ? 1 : -1, -10, 10);
 
-    static int8_t flyawayI = 0;
-    static uint16_t previousDTH = 0;
-
-    if (previousDTH == 0) {
-        previousDTH = rescueState.sensor.distanceToHome;
+    if (gsI == 10) {
+        rescueState.failure = RESCUE_CRASH_DETECTED;
     }
-
-    flyawayI = constrain(flyawayI + (rescueState.sensor.distanceToHome > previousDTH) ? 1 : -1, -10, 10);
-
-    previousDTH = rescueState.sensor.distanceToHome;
-
-    if (flyawayI == 5 && rescueState.phase != RESCUE_LANDING) {
-        rescueState.failure = RESCUE_TOO_FAR;
-    }
-
-
-    //    To the moon detection - Defined as 5 seconds of going away from our altitude target towards the sky
-    static int8_t toTheMoonI = 0;
-    static int32_t previousAlt;
-
-    if (previousAlt == 0) {
-        previousAlt = rescueState.sensor.currentAltitude;
-    }
-
-    toTheMoonI = constrain(toTheMoonI + (
-        rescueState.sensor.currentAltitude > rescueState.intent.targetAltitude
-        && rescueState.sensor.currentAltitude > previousAlt
-    ) ? 1 : -1, -10, 10);
-
-    previousAlt = rescueState.sensor.currentAltitude;
-
-    if (toTheMoonI == 10) {
-        rescueState.failure = RESCUE_TOO_HIGH;
-    }
-*/
 }
 
 void rescueStart()
@@ -302,7 +261,6 @@ void idleTasks()
     rescueState.sensor.maxDistanceToHome = MAX(rescueState.sensor.distanceToHome, rescueState.sensor.maxDistanceToHome);
 
     rescueThrottle = rcCommand[THROTTLE];
-    DEBUG_SET(DEBUG_RTH, 2, rescueThrottle);
 
     //to do: have a default value for hoverThrottle
     float ct = getCosTiltAngle();
@@ -315,9 +273,6 @@ void idleTasks()
             averageThrottle += (adjustedThrottle - averageThrottle) / (throttleSamples + 1);
         }
         hoverThrottle = lrintf(averageThrottle);
-        DEBUG_SET(DEBUG_RTH, 0, (int32_t)(100 * ct));
-        DEBUG_SET(DEBUG_RTH, 1, attitude.values.pitch);
-        DEBUG_SET(DEBUG_RTH, 3, hoverThrottle);
         throttleSamples++;
     }
 
@@ -363,7 +318,7 @@ void rescueAttainPosition()
     const int16_t altitudeDerivative = altitudeError - previousAltitudeError;
 
     // Only allow integral windup within +-15m absolute altitude error
-    if (ABS(altitudeError) < 15) {
+    if (ABS(altitudeError) < 25) {
         altitudeIntegral = constrain(altitudeIntegral + altitudeError, -250, 250);
     } else {
         altitudeIntegral = 0;
@@ -379,7 +334,7 @@ void rescueAttainPosition()
     DEBUG_SET(DEBUG_RTH, 0, rescueThrottle);
     DEBUG_SET(DEBUG_RTH, 1, gpsRescueAngle[AI_PITCH]);
     DEBUG_SET(DEBUG_RTH, 2, altitudeAdjustment);
-    DEBUG_SET(DEBUG_RTH, 3, angleAdjustment);
+    DEBUG_SET(DEBUG_RTH, 3, rescueState.failure);
 }
 
 // Very similar to maghold function on betaflight/cleanflight
