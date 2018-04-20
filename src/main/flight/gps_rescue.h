@@ -32,8 +32,7 @@ typedef enum {
 
 typedef enum {
     RESCUE_HEALTHY,
-    RESCUE_TOO_HIGH,
-    RESCUE_TOO_FAR,
+    RESCUE_FLYAWAY,
     RESCUE_CRASH_DETECTED
 } rescueFailureState_e;
 
@@ -58,6 +57,11 @@ typedef struct {
     float accMagnitudeAvg;
     float accMagnitudeMax;
 } rescueSensorData_s;
+
+typedef struct {
+    bool bumpDetection;
+    bool convergenceDetection;
+} rescueSanityFlags;
 
 typedef struct {
     rescuePhase_e phase;

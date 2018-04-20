@@ -62,6 +62,11 @@ typedef enum {
     GPS_AUTOBAUD_ON
 } gpsAutoBaud_e;
 
+typedef enum {
+    RESCUE_SANITY_OFF = 0,
+    RESCUE_SANITY_ON
+} gpsRescueSanity_e;
+
 #define GPS_BAUDRATE_MAX GPS_BAUDRATE_9600
 
 typedef struct gpsConfig_s {
@@ -83,6 +88,7 @@ typedef struct gpsRescue_s {
     uint16_t throttleMax;
     uint16_t throttleHover;
     uint16_t vP, vI, vD;
+    gpsRescueSanity_e sanityChecks;
 } gpsRescue_t;
 
 PG_DECLARE(gpsRescue_t, gpsRescue);
