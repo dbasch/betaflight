@@ -71,7 +71,7 @@
 #include "flight/pid.h"
 #include "flight/imu.h"
 #include "flight/failsafe.h"
-#include "flight/altitude.h"
+#include "flight/position.h"
 
 #include "telemetry/telemetry.h"
 #include "telemetry/ltm.h"
