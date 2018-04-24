@@ -223,7 +223,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 	    gpsTrust = 100.0/gpsSol.hdop;
 	}
 	// always use at least 10% of other sources besides gps if available
-        gpsTrust = MIN(gpsTrust, 0.9);
+        gpsTrust = MIN(gpsTrust, 0.9f);
     }
 #endif
     
