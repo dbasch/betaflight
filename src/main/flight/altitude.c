@@ -223,10 +223,10 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 	    gpsTrust = 100.0/gpsSol.hdop;
 	}
 	// always use at least 10% of other sources besides gps if available
-        gpsTrust = MIN(gpsTrust, 0.9);
+        gpsTrust = MIN(gpsTrust, 0.9f);
     }
 #endif
-    
+
     float accZ_tmp = 0;
 #ifdef USE_BARO
     int32_t baroVel = 0;
@@ -245,15 +245,13 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 #endif // USE_BARO
 
     int32_t vel_tmp = lrintf(vel);
-    
-    
+
     if (!ARMING_FLAG(ARMED)) {
         baroAltOffset = baroAlt;
         gpsAltOffset = gpsAlt;
     }
     baroAlt -= baroAltOffset;
     gpsAlt -= gpsAltOffset;
-    
     
     if (haveGPSAlt && haveBaroAlt) {
         estimatedAltitude = gpsAlt * gpsTrust + baroAlt * (1-gpsTrust);
@@ -267,7 +265,6 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     
     // set vario
     estimatedVario = applyDeadband(vel_tmp, 5);
-    
 #ifdef USE_ALT_HOLD
     static float accZ_old = 0.0f;
     altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
