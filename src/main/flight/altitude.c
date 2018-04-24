@@ -228,8 +228,8 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 #endif
     
     float accZ_tmp = 0;
-    int32_t baroVel = 0;
 #ifdef USE_BARO
+    int32_t baroVel = 0;
     if (sensors(SENSOR_BARO)) {
         if (!isBaroCalibrationComplete()) {
             return;
