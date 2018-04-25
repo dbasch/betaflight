@@ -326,3 +326,8 @@
 #define MSP_SET_4WAY_IF          245    //in message          Sets 4way interface
 #define MSP_SET_RTC              246    //in message          Sets the RTC clock
 #define MSP_RTC                  247    //out message         Gets the RTC clock
+
+#define MSP_GPS_RESCUE           167    //out message         GPS Rescues's angle, initialAltitude, descentDistance and rescueGroundSpeed
+#define MSP_SET_GPS_RESCUE      168    //in message         GPS Rescues's angle, initialAltitude, descentDistance and rescueGroundSpeed
+#define MSP_GPS_RESCUE_PIDS      169    //out message         GPS Rescues's angle, initialAltitude, descentDistance and rescueGroundSpeed
+#define MSP_SET_GPS_RESCUE_PIDS  170    //in message         GPS Rescues's angle, initialAltitude, descentDistance and rescueGroundSpeed

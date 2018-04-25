@@ -1017,6 +1017,25 @@ static bool mspProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
            sbufWriteU8(dst, GPS_svinfo_cno[i]);
        }
         break;
+
+	case MSP_GPS_RESCUE:
+        sbufWriteU16(dst, gpsRescue()->angle);
+        sbufWriteU16(dst, gpsRescue()->initialAltitude);
+        sbufWriteU16(dst, gpsRescue()->descentDistance);
+        sbufWriteU16(dst, gpsRescue()->rescueGroundspeed);
+		sbufWriteU16(dst, gpsRescue()->throttleMin);
+		sbufWriteU16(dst, gpsRescue()->throttleMax);
+		sbufWriteU16(dst, gpsRescue()->throttleHover);
+		break;
+
+	case MSP_GPS_RESCUE_PIDS:
+		sbufWriteU16(dst, gpsRescue()->tP);
+		sbufWriteU16(dst, gpsRescue()->tI);
+		sbufWriteU16(dst, gpsRescue()->tD);
+		sbufWriteU16(dst, gpsRescue()->vP);
+		sbufWriteU16(dst, gpsRescue()->vI);
+		sbufWriteU16(dst, gpsRescue()->vD);
+		break;		
 #endif
 
     case MSP_ACC_TRIM:
@@ -1540,6 +1559,25 @@ static mspResult_e mspProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
         gpsConfigMutable()->autoConfig = sbufReadU8(src);
         gpsConfigMutable()->autoBaud = sbufReadU8(src);
         break;
+
+	case MSP_SET_GPS_RESCUE:
+        gpsRescueMutable()->angle = sbufReadU16(src);
+        gpsRescueMutable()->initialAltitude = sbufReadU16(src);
+        gpsRescueMutable()->descentDistance = sbufReadU16(src);
+        gpsRescueMutable()->rescueGroundspeed = sbufReadU16(src);
+		gpsRescueMutable()->throttleMin = sbufReadU16(src);
+		gpsRescueMutable()->throttleMax = sbufReadU16(src);
+		gpsRescueMutable()->throttleHover = sbufReadU16(src);
+		break;
+
+	case MSP_SET_GPS_RESCUE_PIDS:
+		gpsRescueMutable()->tP = sbufReadU16(src);
+		gpsRescueMutable()->tI = sbufReadU16(src);
+		gpsRescueMutable()->tD = sbufReadU16(src);
+		gpsRescueMutable()->vP = sbufReadU16(src);
+		gpsRescueMutable()->vI = sbufReadU16(src);
+		gpsRescueMutable()->vD = sbufReadU16(src);
+		break;		
 #endif
 
 #ifdef USE_MAG
