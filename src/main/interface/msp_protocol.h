@@ -329,5 +329,5 @@
 
 #define MSP_GPS_RESCUE           167    //out message         GPS Rescues's angle, initialAltitude, descentDistance and rescueGroundSpeed
 #define MSP_SET_GPS_RESCUE      168    //in message         GPS Rescues's angle, initialAltitude, descentDistance and rescueGroundSpeed
-#define MSP_GPS_RESCUE_PIDS      169    //out message         GPS Rescues's angle, initialAltitude, descentDistance and rescueGroundSpeed
-#define MSP_SET_GPS_RESCUE_PIDS  170    //in message         GPS Rescues's angle, initialAltitude, descentDistance and rescueGroundSpeed
+#define MSP_GPS_RESCUE_PIDS      169    //out message         GPS Rescues's PIDS
+#define MSP_SET_GPS_RESCUE_PIDS  170    //in message         GPS Rescues's PIDS
