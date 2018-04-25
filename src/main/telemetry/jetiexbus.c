@@ -40,7 +40,7 @@
 #include "drivers/serial_uart.h"
 #include "drivers/time.h"
 
-#include "flight/altitude.h"
+#include "flight/position.h"
 #include "flight/imu.h"
 
 #include "io/serial.h"

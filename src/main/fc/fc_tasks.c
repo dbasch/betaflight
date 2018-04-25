@@ -48,7 +48,7 @@
 #include "fc/rc_controls.h"
 #include "fc/runtime_config.h"
 
-#include "flight/altitude.h"
+#include "flight/position.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
 #include "flight/pid.h"
@@ -167,25 +167,9 @@ static void taskUpdateRxMain(timeUs_t currentTimeUs)
     }
 #endif
 
-#if !defined(USE_ALT_HOLD)
     // updateRcCommands sets rcCommand, which is needed by updateAltHoldState and updateSonarAltHoldState
     updateRcCommands();
-#endif
     updateArmingStatus();
-
-#ifdef USE_ALT_HOLD
-#ifdef USE_BARO
-    if (sensors(SENSOR_BARO)) {
-        updateAltHoldState();
-    }
-#endif
-
-#ifdef USE_RANGEFINDER
-    if (sensors(SENSOR_RANGEFINDER)) {
-        updateRangefinderAltHoldState();
-    }
-#endif
-#endif // USE_ALT_HOLD
 }
 #endif
 
@@ -203,19 +187,11 @@ static void taskUpdateBaro(timeUs_t currentTimeUs)
 }
 #endif
 
-#if defined(USE_BARO) || defined(USE_RANGEFINDER)
+#if defined(USE_BARO) || defined(USE_GPS)
 static void taskCalculateAltitude(timeUs_t currentTimeUs)
 {
-    if (false
-#if defined(USE_BARO)
-        || (sensors(SENSOR_BARO) && isBaroReady())
-#endif
-#if defined(USE_RANGEFINDER)
-        || sensors(SENSOR_RANGEFINDER)
-#endif
-        ) {
-        calculateEstimatedAltitude(currentTimeUs);
-    }}
+    calculateEstimatedAltitude(currentTimeUs);
+}
 #endif // USE_BARO || USE_RANGEFINDER
 
 #ifdef USE_TELEMETRY

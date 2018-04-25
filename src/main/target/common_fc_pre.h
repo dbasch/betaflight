@@ -197,7 +197,6 @@
 #endif
 
 #if (FLASH_SIZE > 256)
-#define USE_ALT_HOLD
 #define USE_DASHBOARD
 #define USE_GPS
 #define USE_GPS_NMEA
