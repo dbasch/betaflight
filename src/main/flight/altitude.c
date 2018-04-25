@@ -65,7 +65,6 @@ enum {
 };
 // 40hz update rate (20hz LPF on acc)
 #define BARO_UPDATE_FREQUENCY_40HZ (1000 * 25)
-#define GPS_UPDATE_FREQUENCY_5HZ (1000 * 200)
 
 #if defined(USE_ALT_HOLD)
 
@@ -212,7 +211,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 #endif
 
 #ifdef USE_GPS
-    if (sensors(SENSOR_GPS)) {
+    if (sensors(SENSOR_GPS) && STATE(GPS_FIX)) {
         gpsAlt = gpsSol.llh.alt;
         haveGPSAlt = true;
 	// TODO: if we do not have hdop, we should use another metric to estimate
