@@ -86,7 +86,6 @@
 #include "flight/failsafe.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
-#include "flight/navigation.h"
 #include "flight/pid.h"
 #include "flight/servos.h"
 
@@ -753,12 +752,6 @@ bool processRx(timeUs_t currentTimeUs)
                beeper(BEEPER_RX_SET);
             }
         }
-    }
-#endif
-
-#ifdef USE_NAV
-    if (sensors(SENSOR_GPS)) {
-        updateGpsWaypointsAndMode();
     }
 #endif
 

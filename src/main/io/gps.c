@@ -76,11 +76,8 @@ static char *gpsPacketLogChar = gpsPacketLog;
 int32_t GPS_home[2];
 uint16_t GPS_distanceToHome;        // distance to home point in meters
 int16_t GPS_directionToHome;        // direction to home or hol point in degrees
-int16_t GPS_angle[ANGLE_INDEX_COUNT] = { 0, 0 };    // it's the angles that must be applied for GPS correction
 float dTnav;             // Delta Time in milliseconds for navigation computations, updated with every good GPS read
 int16_t actual_speed[2] = { 0, 0 };
-int16_t nav_takeoff_bearing;
-navigationMode_e nav_mode = NAV_MODE_NONE;    // Navigation mode
 
 // moving average filter variables
 #define GPS_FILTERING              1    // add a 5 element moving average filter to GPS coordinates, helps eliminate gps noise but adds latency
@@ -1304,15 +1301,6 @@ void onGpsNewData(void)
         GPS_filter[axis][GPS_filter_index] = GPS_read[axis] - (GPS_degree[axis] * 10000000);
         GPS_filter_sum[axis] += GPS_filter[axis][GPS_filter_index];
         GPS_filtered[axis] = GPS_filter_sum[axis] / GPS_FILTER_VECTOR_LENGTH + (GPS_degree[axis] * 10000000);
-        if (nav_mode == NAV_MODE_POSHOLD) {             // we use gps averaging only in poshold mode...
-            if (fraction3[axis] > 1 && fraction3[axis] < 999) {
-                if (axis == LAT) {
-                    gpsSol.llh.lat = GPS_filtered[LAT];
-                } else {
-                    gpsSol.llh.lon = GPS_filtered[LON];
-                }
-            }
-        }
     }
 #endif
 
@@ -1329,10 +1317,6 @@ void onGpsNewData(void)
     GPS_calculateDistanceAndDirectionToHome();
     // calculate the current velocity based on gps coordinates continously to get a valid speed at the moment when we start navigating
     GPS_calc_velocity();
-
-#ifdef USE_NAV
-    navNewGpsData();
-#endif
 }
 
 #endif
