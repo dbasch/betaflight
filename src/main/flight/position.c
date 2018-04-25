@@ -23,12 +23,9 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "platform.h"
-
 #include "build/debug.h"
 
 #include "common/maths.h"
-#include "common/utils.h"
 
 #include "fc/runtime_config.h"
 
