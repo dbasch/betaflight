@@ -80,8 +80,8 @@
 #include "sensors/compass.h"
 #include "sensors/esc_sensor.h"
 #include "sensors/gyro.h"
-#include "sensors/rangefinder.h"
 #include "sensors/sensors.h"
+#include "sensors/rangefinder.h"
 
 #include "scheduler/scheduler.h"
 
@@ -192,7 +192,7 @@ static void taskCalculateAltitude(timeUs_t currentTimeUs)
 {
     calculateEstimatedAltitude(currentTimeUs);
 }
-#endif // USE_BARO || USE_RANGEFINDER
+#endif // USE_BARO || USE_GPS
 
 #ifdef USE_TELEMETRY
 static void taskTelemetry(timeUs_t currentTimeUs)
@@ -271,11 +271,8 @@ void fcTasksInit(void)
 #ifdef USE_BARO
     setTaskEnabled(TASK_BARO, sensors(SENSOR_BARO));
 #endif
-#ifdef USE_RANGEFINDER
-    setTaskEnabled(TASK_RANGEFINDER, sensors(SENSOR_RANGEFINDER));
-#endif
-#if defined(USE_BARO) || defined(USE_RANGEFINDER)
-    setTaskEnabled(TASK_ALTITUDE, sensors(SENSOR_BARO) || sensors(SENSOR_RANGEFINDER));
+#if defined(USE_BARO) || defined(USE_GPS)
+    setTaskEnabled(TASK_ALTITUDE, sensors(SENSOR_BARO) || sensors(SENSOR_GPS));
 #endif
 #ifdef USE_DASHBOARD
     setTaskEnabled(TASK_DASHBOARD, feature(FEATURE_DASHBOARD));
@@ -477,16 +474,7 @@ cfTask_t cfTasks[TASK_COUNT] = {
     },
 #endif
 
-#ifdef USE_RANGEFINDER
-    [TASK_RANGEFINDER] = {
-        .taskName = "RANGEFINDER",
-        .taskFunc = rangefinderUpdate,
-        .desiredPeriod = TASK_PERIOD_MS(70), // XXX HCSR04 sonar specific value.
-        .staticPriority = TASK_PRIORITY_LOW,
-    },
-#endif
-
-#if defined(USE_BARO) || defined(USE_RANGEFINDER)
+#if defined(USE_BARO) || defined(USE_GPS)
     [TASK_ALTITUDE] = {
         .taskName = "ALTITUDE",
         .taskFunc = taskCalculateAltitude,

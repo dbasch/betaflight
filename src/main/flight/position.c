@@ -23,20 +23,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "platform.h"
-
 #include "build/debug.h"
 
-#include "common/axis.h"
 #include "common/maths.h"
-#include "common/utils.h"
 
-#include "pg/pg.h"
-#include "pg/pg_ids.h"
-
-#include "fc/config.h"
-#include "fc/rc_controls.h"
-#include "fc/rc_modes.h"
 #include "fc/runtime_config.h"
 
 #include "flight/position.h"
@@ -44,8 +34,6 @@
 #include "flight/pid.h"
 
 #include "io/gps.h"
-
-#include "rx/rx.h"
 
 #include "sensors/sensors.h"
 #include "sensors/barometer.h"
