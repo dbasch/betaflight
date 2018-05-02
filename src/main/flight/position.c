@@ -78,7 +78,7 @@ if (sensors(SENSOR_GPS) && STATE(GPS_FIX)) {
     haveGPSAlt = true;
 
     if (gpsSol.hdop != 0) {
-        gpsTrust = 100.0/gpsSol.hdop;
+        gpsTrust = 100.0 / gpsSol.hdop;
     }
     // always use at least 10% of other sources besides gps if available
     gpsTrust = MIN(gpsTrust, 0.9f);
@@ -111,6 +111,7 @@ int32_t getEstimatedAltitude(void)
 }
 
 // This should be removed or fixed, but it would require changing a lot of other things to get rid of.
-int16_t getEstimatedVario(void){
+int16_t getEstimatedVario(void)
+{
     return 0;
 }
