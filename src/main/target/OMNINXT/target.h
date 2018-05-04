@@ -96,8 +96,13 @@
 
 #define USE_FLASHFS
 #define USE_FLASH_M25P16
+<<<<<<< HEAD
 #define M25P16_SPI_INSTANCE     SPI2
 #define M25P16_CS_PIN           PC14
+=======
+#define FLASH_SPI_INSTANCE      SPI2
+#define FLASH_CS_PIN            PC14
+>>>>>>> 75f82c7f2b12bb222333083ec56347fd29637a15
 
 #define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
 
