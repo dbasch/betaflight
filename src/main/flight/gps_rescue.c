@@ -224,7 +224,7 @@ void performSanityChecks()
     const uint32_t currentTimeUs = micros();
     const uint32_t dTime = currentTimeUs - previousTimeUs;
 
-    if (dTime < 1000 * 1000) {
+    if (dTime < 1E6) {
         return;
     }
 
@@ -281,7 +281,7 @@ void idleTasks()
 
     //to do: have a default value for hoverThrottle
     float ct = getCosTiltAngle();
-    if (ct > 0.5 && ct < 0.96 && throttleSamples < 1E8 && rescueThrottle > 1070) { //5 to 45 degrees tilt
+    if (ct > 0.5 && ct < 0.96 && throttleSamples < 1E6 && rescueThrottle > 1070) { //5 to 45 degrees tilt
         //TO DO: only sample when acceleration is low
         uint16_t adjustedThrottle = 1000 + (rescueThrottle - 1000) * ct;
         if (throttleSamples == 0) {
