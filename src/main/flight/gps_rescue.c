@@ -38,9 +38,6 @@
 #include "flight/imu.h"
 #include "flight/pid.h"
 
-#include "pg/pg.h"
-#include "pg/pg_ids.h"
-
 #include "rx/rx.h"
 
 #include "sensors/acceleration.h"
