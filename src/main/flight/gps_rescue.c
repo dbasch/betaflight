@@ -73,7 +73,7 @@ void updateGPSRescueState(void)
 {
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         rescueStop();
-    } else if(FLIGHT_MODE(GPS_RESCUE_MODE) && rescueState.phase == RESCUE_IDLE){
+    } else if (FLIGHT_MODE(GPS_RESCUE_MODE) && rescueState.phase == RESCUE_IDLE) {
         rescueStart();
     }
 
