@@ -38,6 +38,9 @@
 #include "flight/imu.h"
 #include "flight/pid.h"
 
+#include "pg/pg.h"
+#include "pg/pg_ids.h"
+
 #include "rx/rx.h"
 
 #include "sensors/acceleration.h"
@@ -204,12 +207,15 @@ void performSanityChecks()
     }
 
     // Do not abort until each of these items is fully tested
-    if (rescueState.failure != RESCUE_HEALTHY && rescueState.isFailsafe == true && gpsRescue()->sanityChecks == RESCUE_SANITY_ON) {
-        rescueState.phase = RESCUE_ABORT;
+    if (rescueState.failure != RESCUE_HEALTHY) {
+        if (gpsRescue()->sanityChecks == RESCUE_SANITY_ON 
+            || (gpsRescue()->sanityChecks == RESCUE_SANITY_FS_ONLY && rescueState.isFailsafe == true)) {
+            rescueState.phase = RESCUE_ABORT;
+        }
     }
 
     // If we have a higher accelerometer magnitude than at any previous point in the non RTH flight, we probably crashed!
-    if (rescueState.sensor.accMagnitude > rescueState.sensor.accMagnitudeMax * 1.5) {
+    if (rescueState.sensor.accMagnitude > rescueState.sensor.accMagnitudeMax * 2) {
         rescueState.failure = RESCUE_CRASH_DETECTED;
     }
 
@@ -234,6 +240,20 @@ void performSanityChecks()
 
     if (gsI == 10) {
         rescueState.failure = RESCUE_CRASH_DETECTED;
+    }
+
+    // Minimum sat detection
+    static int8_t msI = 0;
+
+    msI = constrain(msI + (gpsSol.numSat < gpsRescue()->minSats) ? 1 : -1, -5, 5);
+
+    if (msI == 5) {
+        rescueState.failure = RESCUE_FLYAWAY;
+    }
+
+    // Minimum distance detection (100m)
+    if (rescueState.sensor.distanceToHome < 100) {
+        rescueState.failure = RESCUE_TOO_CLOSE;
     }
 }
 

@@ -29,6 +29,7 @@ typedef enum {
 #ifdef USE_GPS
     TABLE_GPS_PROVIDER,
     TABLE_GPS_SBAS_MODE,
+    TABLE_GPS_RESCUE,
 #endif
 #ifdef USE_BLACKBOX
     TABLE_BLACKBOX_DEVICE,
