@@ -73,7 +73,7 @@ void updateGPSRescueState(void)
 {
     if (!FLIGHT_MODE(GPS_RESCUE_MODE)) {
         rescueStop();
-    } else if(FLIGHT_MODE(GPS_RESCUE_MODE) && rescueState.phase == RESCUE_IDLE){
+    } else if (FLIGHT_MODE(GPS_RESCUE_MODE) && rescueState.phase == RESCUE_IDLE) {
         rescueStart();
     }
 
@@ -204,12 +204,15 @@ void performSanityChecks()
     }
 
     // Do not abort until each of these items is fully tested
-    if (rescueState.failure != RESCUE_HEALTHY && rescueState.isFailsafe == true && gpsRescue()->sanityChecks == RESCUE_SANITY_ON) {
-        rescueState.phase = RESCUE_ABORT;
+    if (rescueState.failure != RESCUE_HEALTHY) {
+        if (gpsRescue()->sanityChecks == RESCUE_SANITY_ON 
+            || (gpsRescue()->sanityChecks == RESCUE_SANITY_FS_ONLY && rescueState.isFailsafe == true)) {
+            rescueState.phase = RESCUE_ABORT;
+        }
     }
 
     // If we have a higher accelerometer magnitude than at any previous point in the non RTH flight, we probably crashed!
-    if (rescueState.sensor.accMagnitude > rescueState.sensor.accMagnitudeMax * 1.5) {
+    if (rescueState.sensor.accMagnitude > rescueState.sensor.accMagnitudeMax * 2) {
         rescueState.failure = RESCUE_CRASH_DETECTED;
     }
 
@@ -221,7 +224,7 @@ void performSanityChecks()
     const uint32_t currentTimeUs = micros();
     const uint32_t dTime = currentTimeUs - previousTimeUs;
 
-    if (dTime < 1000 * 1000) {
+    if (dTime < 1E6) {
         return;
     }
 
@@ -234,6 +237,20 @@ void performSanityChecks()
 
     if (gsI == 10) {
         rescueState.failure = RESCUE_CRASH_DETECTED;
+    }
+
+    // Minimum sat detection
+    static int8_t msI = 0;
+
+    msI = constrain(msI + (gpsSol.numSat < gpsRescue()->minSats) ? 1 : -1, -5, 5);
+
+    if (msI == 5) {
+        rescueState.failure = RESCUE_FLYAWAY;
+    }
+
+    // Minimum distance detection (100m)
+    if (rescueState.sensor.distanceToHome < 100) {
+        rescueState.failure = RESCUE_TOO_CLOSE;
     }
 }
 
@@ -264,7 +281,7 @@ void idleTasks()
 
     //to do: have a default value for hoverThrottle
     float ct = getCosTiltAngle();
-    if (ct > 0.5 && ct < 0.96 && throttleSamples < 1E8 && rescueThrottle > 1070) { //5 to 45 degrees tilt
+    if (ct > 0.5 && ct < 0.96 && throttleSamples < 1E6 && rescueThrottle > 1070) { //5 to 45 degrees tilt
         //TO DO: only sample when acceleration is low
         uint16_t adjustedThrottle = 1000 + (rescueThrottle - 1000) * ct;
         if (throttleSamples == 0) {
@@ -349,6 +366,6 @@ void setBearing(int16_t deg)
 
     dif *= -GET_DIRECTION(rcControlsConfig()->yaw_control_reversed);
 
-    rcCommand[YAW] -= dif * currentPidProfile->pid[PID_NAVR].P / 4;
+    rcCommand[YAW] -= dif * gpsRescue()->yP / 4;
 }
 

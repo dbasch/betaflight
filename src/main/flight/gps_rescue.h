@@ -33,7 +33,8 @@ typedef enum {
 typedef enum {
     RESCUE_HEALTHY,
     RESCUE_FLYAWAY,
-    RESCUE_CRASH_DETECTED
+    RESCUE_CRASH_DETECTED,
+    RESCUE_TOO_CLOSE
 } rescueFailureState_e;
 
 typedef struct {
