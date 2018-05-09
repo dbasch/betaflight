@@ -366,6 +366,6 @@ void setBearing(int16_t deg)
 
     dif *= -GET_DIRECTION(rcControlsConfig()->yaw_control_reversed);
 
-    rcCommand[YAW] -= dif * currentPidProfile->pid[PID_NAVR].P / 4;
+    rcCommand[YAW] -= dif * gpsRescue()->yP / 4;
 }
 
