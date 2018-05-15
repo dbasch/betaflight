@@ -242,6 +242,7 @@ void updateArmingStatus(void)
             }
         }
 
+#ifdef USE_GPS
         if (IS_RC_MODE_ACTIVE(BOXGPSRESCUE)) {
             if (rescueState.sensor.numSat < gpsRescue()->minSats) {
                 setArmingDisabled(ARMING_DISABLED_GPS);
@@ -249,7 +250,7 @@ void updateArmingStatus(void)
                 unsetArmingDisabled(ARMING_DISABLED_GPS);
             }
         }
-
+#endif
         if (!isUsingSticksForArming()) {
           /* Ignore ARMING_DISABLED_CALIBRATING if we are going to calibrate gyro on first arm */
           bool ignoreGyro = armingConfig()->gyro_cal_on_first_arm
