@@ -182,6 +182,7 @@ void sensorUpdate()
     if (newGPSData) { // Calculate velocity at lowest common denominator
         rescueState.sensor.distanceToHome = GPS_distanceToHome;
         rescueState.sensor.directionToHome = GPS_directionToHome;
+        rescueState.sensor.numSat = gpsSol.numSat;
         rescueState.sensor.groundSpeed = gpsSol.groundSpeed;
 
         rescueState.sensor.zVelocity = (rescueState.sensor.currentAltitude - previousAltitude) * 1000000.0f / dTime;
@@ -211,8 +212,8 @@ void performSanityChecks()
         }
     }
 
-    // If we have a higher accelerometer magnitude than at any previous point in the non RTH flight, we probably crashed!
-    if (rescueState.sensor.accMagnitude > rescueState.sensor.accMagnitudeMax * 2) {
+    // Check if crash recovery mode is active, disarm if so.
+    if (crashRecoveryModeActive()) {
         rescueState.failure = RESCUE_CRASH_DETECTED;
     }
 
@@ -242,7 +243,7 @@ void performSanityChecks()
     // Minimum sat detection
     static int8_t msI = 0;
 
-    msI = constrain(msI + (gpsSol.numSat < gpsRescue()->minSats) ? 1 : -1, -5, 5);
+    msI = constrain(msI + (rescueState.sensor.numSat < gpsRescue()->minSats) ? 1 : -1, -5, 5);
 
     if (msI == 5) {
         rescueState.failure = RESCUE_FLYAWAY;
@@ -272,8 +273,6 @@ void idleTasks()
 
     // Store the max altitude we see not during RTH so we know our fly-back minimum alt
     rescueState.sensor.maxAltitude = MAX(rescueState.sensor.currentAltitude, rescueState.sensor.maxAltitude);
-    // Store the max magnitude we see not during RTH so we have a basis for crash detection
-    rescueState.sensor.accMagnitudeMax = MAX(rescueState.sensor.accMagnitude, rescueState.sensor.accMagnitudeMax);
     // Store the max distance to home during normal flight so we know if a flyaway is happening
     rescueState.sensor.maxDistanceToHome = MAX(rescueState.sensor.distanceToHome, rescueState.sensor.maxDistanceToHome);
 
