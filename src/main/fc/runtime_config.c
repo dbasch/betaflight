@@ -48,6 +48,7 @@ const char *armingDisableFlagNames[]= {
     "OSD",
     "BST",
     "MSP",
+    "GPS",
     "ARMSWITCH"
 };
 
