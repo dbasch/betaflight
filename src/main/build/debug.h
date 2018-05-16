@@ -81,8 +81,8 @@ typedef enum {
     DEBUG_RUNAWAY_TAKEOFF,
     DEBUG_SDIO,
     DEBUG_CURRENT,
-    DEBUG_RTH,
     DEBUG_ACCELEROMETER_STATE,
+    DEBUG_RTH,
     DEBUG_COUNT
 } debugType_e;
 
