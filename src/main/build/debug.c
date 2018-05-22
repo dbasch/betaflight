@@ -63,6 +63,6 @@ const char * const debugModeNames[DEBUG_COUNT] = {
     "RUNAWAY_TAKEOFF",
     "SDIO",
     "CURRENT_SENSOR",
-    "RTH",
-    "ACCEL_STATE"
+    "ACCEL_STATE",
+    "RTH"
 };
